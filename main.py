@@ -65,9 +65,8 @@ headers = {
 # ==========================================
 # 4. Telegram Notification Configuration
 # ==========================================
-# ใส่ Bot Token และ Chat ID ของคุณที่นี่ (เช่น Token จาก @BotFather และ ID จาก @userinfobot)
-TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # เช่น "123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
-TELEGRAM_CHAT_ID = "YOUR_TELEGRAM_CHAT_ID"      # เช่น "123456789" หรือ ID กลุ่ม "-100123456789"
+TELEGRAM_BOT_TOKEN = "8974699444:AAHoVIXSNMiBa9h-PB1iyrQdlbBtPyOUJ2s"
+TELEGRAM_CHAT_ID = "7903084332"
 PM25_ALERT_THRESHOLD = 75.0                     # เกณฑ์แจ้งเตือน PM 2.5 (> 75 µg/m³ = มีผลกระทบต่อสุขภาพ)
 ALERT_COOLDOWN_SECONDS = 300                    # ระยะเวลาหน่วงการส่งแจ้งเตือนซ้ำ (300 วินาที = 5 นาที) เพื่อไม่ให้ส่งถี่เกินไป
 last_alert_time = 0
