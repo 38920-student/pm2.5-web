@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirGuard | ระบบติดตามคุณภาพอากาศ PM 2.5 & ก๊าซ Real-time</title>
+    
+    <!-- Google Fonts: Prompt & Sarabun -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'Sarabun', 'sans-serif'],
+                    },
+                    colors: {
+                        aqi: {
+                            verygood: '#00b0ff',
+                            good: '#00e676',
+                            moderate: '#ffeb3b',
+                            unhealthy: '#ff9100',
+                            hazardous: '#ff1744',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Prompt', 'Sarabun', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .pulse-dot {
+            animation: pulse-animation 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse-animation {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.15); }
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-full flex flex-col text-slate-800 bg-slate-100">
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
+                        <i class="fa-solid fa-wind text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold bg-gradient-to-r from-slate-900 via-sky-900 to-indigo-900 bg-clip-text text-transparent leading-tight">
+                            AirGuard Dashboard
+                        </h1>
+                        <p class="text-xs text-slate-500 hidden sm:block">ระบบเฝ้าระวังคุณภาพอากาศและฝุ่นละออง PM 2.5</p>
+                    </div>
+                </div>
+
+                <!-- Right Header Actions -->
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <!-- Live Status Badge -->
+                    <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-medium">
+                        <span id="live-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot"></span>
+                        <span id="live-status-text" class="text-slate-700 hidden xs:inline">เชื่อมต่อสำเร็จ</span>
+                        <span id="refresh-timer" class="text-slate-600 font-mono pl-1 border-l border-slate-300">5s</span>
+                    </div>
+
+                    <!-- Auto Refresh Dropdown -->
+                    <div class="relative inline-block text-left">
+                        <select id="auto-refresh-select" onchange="changeRefreshInterval(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 transition shadow-sm cursor-pointer">
+                            <option value="5000">รีเฟรช: 5 วิ</option>
+                            <option value="10000">รีเฟรช: 10 วิ</option>
+                            <option value="30000">รีเฟรช: 30 วิ</option>
+                            <option value="60000">รีเฟรช: 1 นาที</option>
+                            <option value="0">ปิดรีเฟรชอัตโนมัติ</option>
+                        </select>
+                    </div>
+
+                    <!-- Manual Refresh Button -->
+                    <button onclick="fetchAirData(true)" id="btn-manual-refresh" title="รีเฟรชข้อมูลเดี๋ยวนี้" class="p-2 rounded-lg text-slate-600 hover:text-sky-600 hover:bg-sky-50 border border-slate-200 transition shadow-sm">
+                        <i id="refresh-icon" class="fa-solid fa-arrows-rotate text-sm"></i>
+                    </button>
+
+                    <!-- Settings Button -->
+                    <button onclick="openSettingsModal()" title="ตั้งค่าการเชื่อมต่อ API" class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition shadow-sm">
+                        <i class="fa-solid fa-sliders text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Banner สถานะคุณภาพอากาศหลัก (Air Quality Status Hero Banner) -->
+        <div id="status-banner" class="rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md text-white bg-gradient-to-r from-emerald-500 to-teal-600 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-start sm:items-center gap-4">
+                <div id="status-icon-box" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 text-2xl sm:text-3xl text-white shadow-inner">
+                    <i class="fa-solid fa-face-smile"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs uppercase tracking-wider font-semibold bg-white/25 px-2.5 py-0.5 rounded-full">สถานะคุณภาพอากาศปัจจุบัน</span>
+                        <span id="device-id-badge" class="text-xs bg-black/20 px-2 py-0.5 rounded-full font-mono">Device: a1</span>
+                    </div>
+                    <h2 id="banner-status-title" class="text-2xl sm:text-3xl font-bold mt-1 tracking-tight">คุณภาพอากาศดีมาก</h2>
+                    <p id="banner-status-desc" class="text-sm sm:text-base text-white/90 mt-0.5 font-light">คุณภาพอากาศอยู่ในเกณฑ์ดีเยี่ยม สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-white/20">
+                <div class="text-right">
+                    <p class="text-xs text-white/80">อัปเดตล่าสุดเมื่อ</p>
+                    <p id="last-updated-time" class="text-sm font-semibold tracking-wide mt-0.5">--:--:--</p>
+                    <p id="last-updated-date" class="text-xs text-white/70">--/--/----</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric Grid Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            
+            <!-- PM 2.5 Card -->
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:shadow-md transition relative overflow-hidden group">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">ฝุ่นละอองขนาดเล็ก</span>
+                        <h3 class="text-lg font-bold text-slate-800">PM 2.5</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-smog"></i>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-baseline gap-2">
+                    <span id="card-pm25-val" class="text-4xl font-extrabold text-slate-900 tracking-tight font-mono">0.00</span>
+                    <span class="text-sm font-medium text-slate-500">µg/m³</span>
+                </div>
+
+                <!-- Progress indicator for PM2.5 -->
+                <div class="mt-3">
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div id="pm25-progress-bar" class="h-2 rounded-full bg-emerald-500 transition-all duration-500" style="width: 5%;"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+                        <span>0</span>
+                        <span>15</span>
+                        <span>25</span>
+                        <span>37.5</span>
+                        <span>75+</span>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span class="text-slate-500">เกณฑ์มาตรฐาน:</span>
+                    <span id="pm25-level-badge" class="px-2 py-0.5 rounded-full font-medium text-emerald-700 bg-emerald-50">อากาศดีมาก</span>
+                </div>
+            </div>
+
+            <!-- Gas Card -->
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:shadow-md transition relative overflow-hidden group">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">ระดับก๊าซในอากาศ</span>
+                        <h3 class="text-lg font-bold text-slate-800">Gas Level (<span id="gas-type-label">CO</span>)</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-fire-flame-simple"></i>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-baseline gap-2">
+                    <span id="card-gas-val" class="text-4xl font-extrabold text-slate-900 tracking-tight font-mono">0.00</span>
+                    <span class="text-sm font-medium text-slate-500">PPM</span>
+                </div>
+
+                <div class="mt-3">
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div id="gas-progress-bar" class="h-2 rounded-full bg-purple-500 transition-all duration-500" style="width: 30%;"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+                        <span>0</span>
+                        <span>500</span>
+                        <span>1000+ PPM</span>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span class="text-slate-500">สถานะก๊าซ:</span>
+                    <span id="gas-level-badge" class="px-2 py-0.5 rounded-full font-medium text-purple-700 bg-purple-50">ปกติ</span>
+                </div>
+            </div>
+
+            <!-- Average PM 2.5 Stat -->
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:shadow-md transition">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">สถิติรอบชุดข้อมูล</span>
+                        <h3 class="text-lg font-bold text-slate-800">ค่าเฉลี่ย PM 2.5</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-baseline gap-2">
+                    <span id="stat-avg-pm25" class="text-4xl font-extrabold text-slate-900 tracking-tight font-mono">0.00</span>
+                    <span class="text-sm font-medium text-slate-500">µg/m³</span>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                        <span class="text-slate-600 block">ต่ำสุด (Min)</span>
+                        <span id="stat-min-pm25" class="font-bold text-slate-800 font-mono">0.00</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-600 block">สูงสุด (Max)</span>
+                        <span id="stat-max-pm25" class="font-bold text-slate-800 font-mono">0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Records / Status -->
+            <div class="glass-card rounded-2xl p-5 shadow-sm hover:shadow-md transition">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">การบันทึกข้อมูล</span>
+                        <h3 class="text-lg font-bold text-slate-800">จำนวนบันทึก</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-baseline gap-2">
+                    <span id="stat-total-rows" class="text-4xl font-extrabold text-indigo-600 tracking-tight font-mono">0</span>
+                    <span class="text-sm font-medium text-slate-500">รายการ</span>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span class="text-slate-500">แหล่งข้อมูล:</span>
+                    <span class="font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">NocoDB Cloud API</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Section: Interactive Chart -->
+        <div class="glass-card rounded-2xl p-5 sm:p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-sky-500"></i>
+                        กราฟแนวโน้มคุณภาพอากาศ (Trends)
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">แสดงการเปลี่ยนแปลงของค่า PM 2.5 และก๊าซตามลำดับเวลา</p>
+                </div>
+
+                <!-- Chart Controls -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Toggle Series -->
+                    <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs">
+                        <button onclick="setChartSeries('all')" id="btn-chart-all" class="px-2.5 py-1 rounded-md font-medium bg-white text-slate-800 shadow-sm">ทั้งหมด</button>
+                        <button onclick="setChartSeries('pm25')" id="btn-chart-pm25" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">PM 2.5</button>
+                        <button onclick="setChartSeries('gas')" id="btn-chart-gas" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">ก๊าซ</button>
+                    </div>
+
+                    <!-- Limit Selector -->
+                    <select id="data-limit-select" onchange="changeDataLimit(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
+                        <option value="15">15 รายการล่าสุด</option>
+                        <option value="30">30 รายการล่าสุด</option>
+                        <option value="50">50 รายการล่าสุด</option>
+                        <option value="100">100 รายการล่าสุด</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Chart Canvas -->
+            <div class="mt-4 relative" style="height: 340px;">
+                <canvas id="airChart"></canvas>
+            </div>
+
+            <!-- Standard Indicator Legend Bar -->
+            <div class="mt-4 pt-4 border-t border-slate-100">
+                <div class="text-xs font-semibold text-slate-600 mb-2">เกณฑ์มาตรฐานคุณภาพอากาศ PM 2.5 (ประเทศไทย - PCD):</div>
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+                    <div class="flex items-center gap-2 p-2 rounded-lg bg-sky-50 border border-sky-100">
+                        <span class="w-3 h-3 rounded-full bg-[#00b0ff] shrink-0"></span>
+                        <div>
+                            <p class="font-bold text-sky-900">0 - 15.0</p>
+                            <p class="text-[11px] text-sky-700">ฟ้า: อากาศดีมาก</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 rounded-lg bg-emerald-50 border border-emerald-100">
+                        <span class="w-3 h-3 rounded-full bg-[#00e676] shrink-0"></span>
+                        <div>
+                            <p class="font-bold text-emerald-900">15.1 - 25.0</p>
+                            <p class="text-[11px] text-emerald-700">เขียว: อากาศดี</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 rounded-lg bg-yellow-50 border border-yellow-100">
+                        <span class="w-3 h-3 rounded-full bg-[#ffeb3b] shrink-0"></span>
+                        <div>
+                            <p class="font-bold text-yellow-900">25.1 - 37.5</p>
+                            <p class="text-[11px] text-yellow-700">เหลือง: ปานกลาง</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 rounded-lg bg-orange-50 border border-orange-100">
+                        <span class="w-3 h-3 rounded-full bg-[#ff9100] shrink-0"></span>
+                        <div>
+                            <p class="font-bold text-orange-900">37.6 - 75.0</p>
+                            <p class="text-[11px] text-orange-700">ส้ม: เริ่มมีผลกระทบ</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 rounded-lg bg-rose-50 border border-rose-100 col-span-2 sm:col-span-1">
+                        <span class="w-3 h-3 rounded-full bg-[#ff1744] shrink-0"></span>
+                        <div>
+                            <p class="font-bold text-rose-900">&gt; 75.0</p>
+                            <p class="text-[11px] text-rose-700">แดง: มีผลกระทบ</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Data Table & Filters -->
+        <div class="glass-card rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-table-list text-indigo-500"></i>
+                        ประวัติการบันทึกข้อมูล (History Log)
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">รายการข้อมูลเซนเซอร์ย้อนหลังจาก NocoDB</p>
+                </div>
+
+                <!-- Export & Search Tools -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="exportToCSV()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition shadow-sm">
+                        <i class="fa-solid fa-file-excel"></i>
+                        ส่งออก CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div>
+                    <label class="block text-slate-600 font-medium mb-1">ค้นหาข้อความ / วันที่</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400"></i>
+                        <input type="text" id="search-input" onkeyup="filterTableData()" placeholder="พิมพ์ค้นหา..." class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-600 font-medium mb-1">ตั้งแต่วันที่</label>
+                    <input type="date" id="filter-start-date" onchange="filterTableData()" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+                <div>
+                    <label class="block text-slate-600 font-medium mb-1">ถึงวันที่</label>
+                    <input type="date" id="filter-end-date" onchange="filterTableData()" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="resetFilters()" class="w-full py-1.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition">
+                        <i class="fa-solid fa-arrow-rotate-left mr-1"></i> ล้างตัวกรอง
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-700 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+                        <tr>
+                            <th class="py-3 px-4"># ID</th>
+                            <th class="py-3 px-4">วันและเวลา (Timestamp)</th>
+                            <th class="py-3 px-4">อุปกรณ์ (Device)</th>
+                            <th class="py-3 px-4">PM 2.5 (µg/m³)</th>
+                            <th class="py-3 px-4">ก๊าซ (PPM)</th>
+                            <th class="py-3 px-4">สถานะคุณภาพอากาศ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body" class="divide-y divide-slate-100 bg-white text-slate-700">
+                        <tr>
+                            <td colspan="6" class="text-center py-8 text-slate-400">
+                                <i class="fa-solid fa-spinner fa-spin text-xl mb-2 block text-sky-500"></i>
+                                กำลังโหลดข้อมูลจากเซิร์ฟเวอร์...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Table Pagination & Count -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 text-xs text-slate-500">
+                <div id="table-record-count">แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ</div>
+                <div class="flex items-center gap-1" id="pagination-controls">
+                    <!-- Pagination buttons generated by JS -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
+            <p>Air Quality Monitoring Dashboard &bull; พร้อมใช้งานบน GitHub Pages</p>
+            <p class="text-slate-400">เชื่อมต่อ NocoDB API Real-time &bull; แสดงผลข้อมูลเซนเซอร์วัดค่าฝุ่น PM 2.5 และก๊าซ</p>
+        </div>
+    </footer>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-5 transform transition-all">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-gear text-sky-500"></i>
+                    ตั้งค่าการเชื่อมต่อ NocoDB API
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-slate-700 font-medium mb-1">NocoDB API Base URL</label>
+                    <input type="text" id="setting-api-url" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="https://app.nocodb.com">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-medium mb-1">Table ID (หรือ View ID)</label>
+                    <input type="text" id="setting-table-id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="m3tvvlkrs3gobi6">
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-medium mb-1">NocoDB API Token (xc-token)</label>
+                    <input type="password" id="setting-api-token" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="nc_pat_...">
+                </div>
+
+                <div id="settings-test-result" class="hidden p-2.5 rounded-lg text-xs font-medium"></div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                <button onclick="resetDefaultSettings()" class="text-xs text-rose-600 hover:underline">
+                    คืนค่าเริ่มต้น
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="testConnection()" class="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium transition">
+                        ทดสอบการเชื่อมต่อ
+                    </button>
+                    <button onclick="saveSettings()" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-medium transition shadow-sm">
+                        บันทึกการตั้งค่า
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Default Configuration
+        const DEFAULT_CONFIG = {
+            baseUrl: "https://app.nocodb.com",
+            tableId: "m3tvvlkrs3gobi6",
+            token: "nc_pat_hmNMnwKOLq6MI1FcrZ63uyjtPVwCHobqD2K44iFi",
+            refreshInterval: 5000,
+            dataLimit: 15
+        };
+
+        // App State
+        let config = { ...DEFAULT_CONFIG };
+        let allRecords = [];
+        let filteredRecords = [];
+        let refreshTimerId = null;
+        let countdownValue = 5;
+        let countdownTimerId = null;
+        let chartInstance = null;
+        let activeChartSeries = 'all'; // 'all', 'pm25', 'gas'
+        let currentPage = 1;
+        const rowsPerPage = 10;
+
+        // Load saved config from localStorage
+        function loadStoredConfig() {
+            const saved = localStorage.getItem('airguard_config');
+            if (saved) {
+                try {
+                    config = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
+                } catch (e) {
+                    console.error('Error loading config from localStorage:', e);
+                }
+            }
+        }
+
+        // Save config
+        function saveConfigToStorage() {
+            localStorage.setItem('airguard_config', JSON.stringify(config));
+        }
+
+        // Initialize Chart.js
+        function initChart() {
+            const ctx = document.getElementById('airChart').getContext('2d');
+            
+            // Gradient fill for PM 2.5
+            const gradientPM25 = ctx.createLinearGradient(0, 0, 0, 300);
+            gradientPM25.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+            gradientPM25.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+            // Gradient fill for Gas
+            const gradientGas = ctx.createLinearGradient(0, 0, 0, 300);
+            gradientGas.addColorStop(0, 'rgba(168, 85, 247, 0.4)');
+            gradientGas.addColorStop(1, 'rgba(168, 85, 247, 0.0)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'PM 2.5 (µg/m³)',
+                            data: [],
+                            borderColor: '#0284c7',
+                            backgroundColor: gradientPM25,
+                            borderWidth: 2.5,
+                            pointBackgroundColor: '#0284c7',
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            fill: true,
+                            tension: 0.35,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Gas (PPM)',
+                            data: [],
+                            borderColor: '#9333ea',
+                            backgroundColor: gradientGas,
+                            borderWidth: 2.5,
+                            pointBackgroundColor: '#9333ea',
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            fill: true,
+                            tension: 0.35,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: { family: 'Prompt', size: 12 },
+                                usePointStyle: true,
+                                boxWidth: 8
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleFont: { family: 'Prompt', size: 12 },
+                            bodyFont: { family: 'Prompt', size: 12 },
+                            padding: 10,
+                            boxPadding: 4,
+                            usePointStyle: true
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(226, 232, 240, 0.6)' },
+                            ticks: {
+                                font: { family: 'Prompt', size: 11 },
+                                maxRotation: 45,
+                                autoSkip: true,
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'PM 2.5 (µg/m³)',
+                                font: { family: 'Prompt', size: 11, weight: '600' },
+                                color: '#0284c7'
+                            },
+                            grid: { color: 'rgba(226, 232, 240, 0.6)' },
+                            beginAtZero: true
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Gas (PPM)',
+                                font: { family: 'Prompt', size: 11, weight: '600' },
+                                color: '#9333ea'
+                            },
+                            grid: { drawOnChartArea: false },
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Format Date/Time helper
+        function formatDateTime(isoString) {
+            if (!isoString) return { dateStr: '--/--/----', timeStr: '--:--:--', full: '-' };
+            try {
+                const date = new Date(isoString);
+                if (isNaN(date.getTime())) return { dateStr: isoString, timeStr: '', full: isoString };
+                
+                // Format in Thai locale
+                const timeStr = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const dateStr = date.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                return {
+                    dateStr,
+                    timeStr,
+                    full: `${dateStr} ${timeStr}`
+                };
+            } catch (e) {
+                return { dateStr: isoString, timeStr: '', full: isoString };
+            }
+        }
+
+        // Air Quality Assessment logic (Thailand PCD standard)
+        function getAQIStatus(pm25) {
+            const val = parseFloat(pm25) || 0;
+            if (val <= 15.0) {
+                return {
+                    label: 'อากาศดีมาก (Very Good)',
+                    color: 'text-sky-700',
+                    bg: 'bg-sky-50',
+                    border: 'border-sky-200',
+                    gradient: 'from-sky-500 to-blue-600',
+                    icon: 'fa-face-smile',
+                    desc: 'คุณภาพอากาศดีเยี่ยม เหมาะสำหรับกิจกรรมกลางแจ้งและการท่องเที่ยวทุกประเภท',
+                    level: 1
+                };
+            } else if (val <= 25.0) {
+                return {
+                    label: 'อากาศดี (Good)',
+                    color: 'text-emerald-700',
+                    bg: 'bg-emerald-50',
+                    border: 'border-emerald-200',
+                    gradient: 'from-emerald-500 to-teal-600',
+                    icon: 'fa-face-smile-beam',
+                    desc: 'คุณภาพอากาศดี สามารถทำกิจกรรมกลางแจ้งได้ตามปกติ',
+                    level: 2
+                };
+            } else if (val <= 37.5) {
+                return {
+                    label: 'ปานกลาง (Moderate)',
+                    color: 'text-amber-700',
+                    bg: 'bg-amber-50',
+                    border: 'border-amber-200',
+                    gradient: 'from-amber-500 to-yellow-600',
+                    icon: 'fa-face-meh',
+                    desc: 'ประชาชนทั่วไปทำกิจกรรมได้ตามปกติ ผู้ป่วยกลุ่มเสี่ยงควรสังเกตอาการตนเอง',
+                    level: 3
+                };
+            } else if (val <= 75.0) {
+                return {
+                    label: 'เริ่มมีผลกระทบต่อสุขภาพ (Unhealthy for sensitive groups)',
+                    color: 'text-orange-700',
+                    bg: 'bg-orange-50',
+                    border: 'border-orange-200',
+                    gradient: 'from-orange-500 to-amber-600',
+                    icon: 'fa-face-frown',
+                    desc: 'ควรลดระยะเวลาการทำกิจกรรมกลางแจ้ง สวมหน้ากากป้องกันฝุ่นเมื่อออกนอกอาคาร',
+                    level: 4
+                };
+            } else {
+                return {
+                    label: 'มีผลกระทบต่อสุขภาพ (Hazardous)',
+                    color: 'text-rose-700',
+                    bg: 'bg-rose-50',
+                    border: 'border-rose-200',
+                    gradient: 'from-rose-600 to-red-700',
+                    icon: 'fa-face-dizzy',
+                    desc: 'ทุกคนควรหลีกเลี่ยงกิจกรรมกลางแจ้ง สวมหน้ากาก N95 และอยู่ภายในอาคารที่ปิดมิดชิด',
+                    level: 5
+                };
+            }
+        }
+
+        // Fetch Data directly from NocoDB API
+        async function fetchAirData(isManual = false) {
+            const refreshIcon = document.getElementById('refresh-icon');
+            if (isManual && refreshIcon) refreshIcon.classList.add('fa-spin');
+
+            const url = `${config.baseUrl}/api/v2/tables/${config.tableId}/records?limit=${config.dataLimit}&sort=-Id`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'xc-token': config.token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const rawList = data.list || [];
+
+                // Parse records to standardized objects
+                allRecords = rawList.map(item => {
+                    const pm25 = parseFloat(item['PM 2.5 Value'] ?? item.pm25 ?? item['PM2.5'] ?? 0);
+                    const gas = parseFloat(item['Gas Value'] ?? item.gas ?? item['Gas'] ?? 0);
+                    const gasType = item['Gas Type'] ?? item.gas_type ?? 'CO';
+                    const deviceId = item['Device ID'] ?? item.device_id ?? 'a1';
+                    const rawTime = item.Timestamp || item.CreatedAt || item.created_at || '';
+                    const dt = formatDateTime(rawTime);
+
+                    return {
+                        id: item.Id,
+                        deviceId,
+                        pm25: isNaN(pm25) ? 0 : pm25,
+                        gas: isNaN(gas) ? 0 : gas,
+                        gasType,
+                        rawTime,
+                        timeFormatted: dt.timeStr,
+                        dateFormatted: dt.dateStr,
+                        fullFormatted: dt.full
+                    };
+                });
+
+                // Update UI elements
+                updateDashboardUI(allRecords, data.pageInfo?.totalRows || allRecords.length);
+                
+                // Update connection status badge
+                setConnectionStatus(true, 'เชื่อมต่อข้อมูลสำเร็จ');
+
+            } catch (err) {
+                console.error('Error fetching NocoDB data:', err);
+                setConnectionStatus(false, 'ไม่สามารถดึงข้อมูลได้: ' + err.message);
+            } finally {
+                if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+                resetCountdown();
+            }
+        }
+
+        // Set Connection status badge
+        function setConnectionStatus(isOk, message) {
+            const indicator = document.getElementById('live-indicator');
+            const statusText = document.getElementById('live-status-text');
+            
+            if (isOk) {
+                indicator.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot';
+                statusText.innerText = 'เชื่อมต่อแล้ว';
+                statusText.className = 'text-emerald-700 hidden xs:inline';
+            } else {
+                indicator.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+                statusText.innerText = 'ข้อผิดพลาด';
+                statusText.className = 'text-rose-600 hidden xs:inline font-bold';
+            }
+        }
+
+        // Update Dashboard UI
+        function updateDashboardUI(records, totalRowsCount) {
+            if (!records || records.length === 0) {
+                document.getElementById('history-table-body').innerHTML = `
+                    <tr><td colspan="6" class="text-center py-6 text-slate-400">ไม่พบข้อมูลในระบบ NocoDB</td></tr>
+                `;
+                return;
+            }
+
+            const latest = records[0];
+            const aqi = getAQIStatus(latest.pm25);
+
+            // 1. Update Banner
+            const banner = document.getElementById('status-banner');
+            banner.className = `rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md text-white bg-gradient-to-r ${aqi.gradient} flex flex-col md:flex-row md:items-center justify-between gap-4`;
+            
+            document.getElementById('banner-status-title').innerText = aqi.label.split('(')[0].trim();
+            document.getElementById('banner-status-desc').innerText = aqi.desc;
+            document.getElementById('status-icon-box').innerHTML = `<i class="fa-solid ${aqi.icon}"></i>`;
+            document.getElementById('device-id-badge').innerText = `Device: ${latest.deviceId}`;
+            document.getElementById('last-updated-time').innerText = latest.timeFormatted || '--:--:--';
+            document.getElementById('last-updated-date').innerText = latest.dateFormatted || '--/--/----';
+
+            // 2. Update Metric Cards
+            document.getElementById('card-pm25-val').innerText = latest.pm25.toFixed(2);
+            document.getElementById('card-gas-val').innerText = latest.gas.toFixed(2);
+            document.getElementById('gas-type-label').innerText = latest.gasType.toUpperCase();
+
+            // PM2.5 Progress bar (scale 0-100 for visual)
+            const pm25Percent = Math.min(100, Math.max(5, (latest.pm25 / 100) * 100));
+            const pmProgressBar = document.getElementById('pm25-progress-bar');
+            pmProgressBar.style.width = `${pm25Percent}%`;
+            
+            if (latest.pm25 <= 15) pmProgressBar.className = 'h-2 rounded-full bg-[#00b0ff] transition-all duration-500';
+            else if (latest.pm25 <= 25) pmProgressBar.className = 'h-2 rounded-full bg-[#00e676] transition-all duration-500';
+            else if (latest.pm25 <= 37.5) pmProgressBar.className = 'h-2 rounded-full bg-[#ffeb3b] transition-all duration-500';
+            else if (latest.pm25 <= 75) pmProgressBar.className = 'h-2 rounded-full bg-[#ff9100] transition-all duration-500';
+            else pmProgressBar.className = 'h-2 rounded-full bg-[#ff1744] transition-all duration-500';
+
+            const badge = document.getElementById('pm25-level-badge');
+            badge.innerText = aqi.label.split('(')[0].trim();
+            badge.className = `px-2 py-0.5 rounded-full font-medium ${aqi.color} ${aqi.bg}`;
+
+            // Gas Progress bar (scale 0-1000)
+            const gasPercent = Math.min(100, Math.max(5, (latest.gas / 1000) * 100));
+            document.getElementById('gas-progress-bar').style.width = `${gasPercent}%`;
+
+            // 3. Update Statistics
+            const pmValues = records.map(r => r.pm25);
+            const sumPM = pmValues.reduce((a, b) => a + b, 0);
+            const avgPM = (sumPM / (pmValues.length || 1)).toFixed(2);
+            const minPM = Math.min(...pmValues).toFixed(2);
+            const maxPM = Math.max(...pmValues).toFixed(2);
+
+            document.getElementById('stat-avg-pm25').innerText = avgPM;
+            document.getElementById('stat-min-pm25').innerText = minPM;
+            document.getElementById('stat-max-pm25').innerText = maxPM;
+            document.getElementById('stat-total-rows').innerText = totalRowsCount;
+
+            // 4. Update Chart
+            updateChartData(records);
+
+            // 5. Update Table
+            filterTableData();
+        }
+
+        // Update Chart
+        function updateChartData(records) {
+            if (!chartInstance) return;
+
+            // Records are sorted desc, reverse for chronological chart
+            const chartRecords = [...records].reverse();
+            const labels = chartRecords.map(r => r.timeFormatted || r.rawTime);
+            const pmData = chartRecords.map(r => r.pm25);
+            const gasData = chartRecords.map(r => r.gas);
+
+            chartInstance.data.labels = labels;
+            chartInstance.data.datasets[0].data = pmData;
+            chartInstance.data.datasets[1].data = gasData;
+
+            // Handle series visibility
+            if (activeChartSeries === 'pm25') {
+                chartInstance.data.datasets[0].hidden = false;
+                chartInstance.data.datasets[1].hidden = true;
+                chartInstance.options.scales.y.display = true;
+                chartInstance.options.scales.y1.display = false;
+            } else if (activeChartSeries === 'gas') {
+                chartInstance.data.datasets[0].hidden = true;
+                chartInstance.data.datasets[1].hidden = false;
+                chartInstance.options.scales.y.display = false;
+                chartInstance.options.scales.y1.display = true;
+            } else {
+                chartInstance.data.datasets[0].hidden = false;
+                chartInstance.data.datasets[1].hidden = false;
+                chartInstance.options.scales.y.display = true;
+                chartInstance.options.scales.y1.display = true;
+            }
+
+            chartInstance.update();
+        }
+
+        // Switch Chart Series
+        function setChartSeries(series) {
+            activeChartSeries = series;
+            
+            const btnAll = document.getElementById('btn-chart-all');
+            const btnPM = document.getElementById('btn-chart-pm25');
+            const btnGas = document.getElementById('btn-chart-gas');
+
+            [btnAll, btnPM, btnGas].forEach(b => {
+                b.className = 'px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900';
+            });
+
+            if (series === 'all') btnAll.className = 'px-2.5 py-1 rounded-md font-medium bg-white text-slate-800 shadow-sm';
+            if (series === 'pm25') btnPM.className = 'px-2.5 py-1 rounded-md font-medium bg-white text-slate-800 shadow-sm';
+            if (series === 'gas') btnGas.className = 'px-2.5 py-1 rounded-md font-medium bg-white text-slate-800 shadow-sm';
+
+            updateChartData(allRecords);
+        }
+
+        // Filter Table Data
+        function filterTableData() {
+            const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+            const startDate = document.getElementById('filter-start-date')?.value;
+            const endDate = document.getElementById('filter-end-date')?.value;
+
+            filteredRecords = allRecords.filter(r => {
+                // Search query match
+                const matchesQuery = !query || 
+                    String(r.id).includes(query) || 
+                    r.deviceId.toLowerCase().includes(query) || 
+                    r.fullFormatted.toLowerCase().includes(query) ||
+                    String(r.pm25).includes(query) ||
+                    String(r.gas).includes(query);
+
+                if (!matchesQuery) return false;
+
+                // Date filtering
+                if (startDate || endDate) {
+                    const recordDate = new Date(r.rawTime);
+                    if (!isNaN(recordDate.getTime())) {
+                        if (startDate) {
+                            const start = new Date(startDate);
+                            start.setHours(0, 0, 0, 0);
+                            if (recordDate < start) return false;
+                        }
+                        if (endDate) {
+                            const end = new Date(endDate);
+                            end.setHours(23, 59, 59, 999);
+                            if (recordDate > end) return false;
+                        }
+                    }
+                }
+
+                return true;
+            });
+
+            currentPage = 1;
+            renderTablePage();
+        }
+
+        // Render Table Pagination & Rows
+        function renderTablePage() {
+            const tbody = document.getElementById('history-table-body');
+            const total = filteredRecords.length;
+
+            if (total === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">ไม่พบรายการที่ตรงกับเงื่อนไข</td></tr>`;
+                document.getElementById('table-record-count').innerText = `แสดง 0 ถึง 0 จากทั้งหมด 0 รายการ`;
+                document.getElementById('pagination-controls').innerHTML = '';
+                return;
+            }
+
+            const totalPages = Math.ceil(total / rowsPerPage);
+            const startIdx = (currentPage - 1) * rowsPerPage;
+            const pageRecords = filteredRecords.slice(startIdx, startIdx + rowsPerPage);
+
+            let html = '';
+            pageRecords.forEach(r => {
+                const aqi = getAQIStatus(r.pm25);
+                html += `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="py-3 px-4 font-mono font-bold text-slate-600">#${r.id}</td>
+                        <td class="py-3 px-4">
+                            <div class="font-medium text-slate-800">${r.timeFormatted}</div>
+                            <div class="text-xs text-slate-400">${r.dateFormatted}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-0.5 rounded bg-slate-100 font-mono text-xs text-slate-600 font-semibold">${r.deviceId}</span>
+                        </td>
+                        <td class="py-3 px-4 font-mono font-bold text-slate-900">
+                            ${r.pm25.toFixed(2)} <span class="text-[11px] font-normal text-slate-400">µg/m³</span>
+                        </td>
+                        <td class="py-3 px-4 font-mono font-bold text-slate-900">
+                            ${r.gas.toFixed(2)} <span class="text-[11px] font-normal text-slate-400">PPM (${r.gasType})</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${aqi.bg} ${aqi.color} border ${aqi.border}">
+                                <i class="fa-solid ${aqi.icon}"></i>
+                                ${aqi.label.split('(')[0].trim()}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            document.getElementById('table-record-count').innerText = 
+                `แสดง ${startIdx + 1} ถึง ${Math.min(startIdx + rowsPerPage, total)} จากทั้งหมด ${total} รายการ`;
+
+            // Render Pagination Buttons
+            let pageHtml = '';
+            if (totalPages > 1) {
+                pageHtml += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-2.5 py-1 rounded border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100"><i class="fa-solid fa-chevron-left"></i></button>`;
+                
+                for (let p = 1; p <= totalPages; p++) {
+                    if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+                        pageHtml += `<button onclick="changePage(${p})" class="px-2.5 py-1 rounded text-xs font-medium ${currentPage === p ? 'bg-sky-600 text-white' : 'border border-slate-200 text-slate-700 hover:bg-slate-100'}">${p}</button>`;
+                    } else if (p === currentPage - 2 || p === currentPage + 2) {
+                        pageHtml += `<span class="px-1 text-slate-400">...</span>`;
+                    }
+                }
+
+                pageHtml += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-2.5 py-1 rounded border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100"><i class="fa-solid fa-chevron-right"></i></button>`;
+            }
+            document.getElementById('pagination-controls').innerHTML = pageHtml;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredRecords.length / rowsPerPage);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTablePage();
+        }
+
+        function resetFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-start-date').value = '';
+            document.getElementById('filter-end-date').value = '';
+            filterTableData();
+        }
+
+        // Export data to CSV file
+        function exportToCSV() {
+            if (!filteredRecords || filteredRecords.length === 0) {
+                alert('ไม่มีข้อมูลสำหรับส่งออก');
+                return;
+            }
+
+            let csvContent = "\uFEFF"; // UTF-8 BOM for Thai characters in Excel
+            csvContent += "ID,Device ID,Timestamp,PM 2.5 (ug/m3),Gas Value (PPM),Gas Type,AQI Status\n";
+
+            filteredRecords.forEach(r => {
+                const aqi = getAQIStatus(r.pm25);
+                const statusTitle = aqi.label.replace(/"/g, '""');
+                csvContent += `"${r.id}","${r.deviceId}","${r.fullFormatted}","${r.pm25}","${r.gas}","${r.gasType}","${statusTitle}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `air_quality_records_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Auto Refresh Interval handling
+        function changeRefreshInterval(ms) {
+            config.refreshInterval = parseInt(ms, 10);
+            saveConfigToStorage();
+            startAutoRefresh();
+        }
+
+        function changeDataLimit(limit) {
+            config.dataLimit = parseInt(limit, 10);
+            saveConfigToStorage();
+            fetchAirData(true);
+        }
+
+        function startAutoRefresh() {
+            if (refreshTimerId) clearInterval(refreshTimerId);
+            if (countdownTimerId) clearInterval(countdownTimerId);
+
+            if (config.refreshInterval > 0) {
+                resetCountdown();
+                countdownTimerId = setInterval(() => {
+                    countdownValue -= 1;
+                    if (countdownValue < 0) countdownValue = Math.floor(config.refreshInterval / 1000);
+                    const timerElem = document.getElementById('refresh-timer');
+                    if (timerElem) timerElem.innerText = `${countdownValue}s`;
+                }, 1000);
+
+                refreshTimerId = setInterval(() => {
+                    fetchAirData();
+                }, config.refreshInterval);
+            } else {
+                const timerElem = document.getElementById('refresh-timer');
+                if (timerElem) timerElem.innerText = 'Off';
+            }
+        }
+
+        function resetCountdown() {
+            countdownValue = Math.floor(config.refreshInterval / 1000);
+            const timerElem = document.getElementById('refresh-timer');
+            if (timerElem) timerElem.innerText = config.refreshInterval > 0 ? `${countdownValue}s` : 'Off';
+        }
+
+        // Settings Modal Handlers
+        function openSettingsModal() {
+            document.getElementById('setting-api-url').value = config.baseUrl;
+            document.getElementById('setting-table-id').value = config.tableId;
+            document.getElementById('setting-api-token').value = config.token;
+            document.getElementById('settings-test-result').classList.add('hidden');
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function resetDefaultSettings() {
+            document.getElementById('setting-api-url').value = DEFAULT_CONFIG.baseUrl;
+            document.getElementById('setting-table-id').value = DEFAULT_CONFIG.tableId;
+            document.getElementById('setting-api-token').value = DEFAULT_CONFIG.token;
+        }
+
+        async function testConnection() {
+            const urlInput = document.getElementById('setting-api-url').value.trim();
+            const tableInput = document.getElementById('setting-table-id').value.trim();
+            const tokenInput = document.getElementById('setting-api-token').value.trim();
+            const resultBox = document.getElementById('settings-test-result');
+
+            resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 block';
+            resultBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังทดสอบเชื่อมต่อไปยัง NocoDB...';
+
+            try {
+                const testUrl = `${urlInput}/api/v2/tables/${tableInput}/records?limit=1`;
+                const res = await fetch(testUrl, {
+                    headers: { 'xc-token': tokenInput }
+                });
+
+                if (res.ok) {
+                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 block';
+                    resultBox.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i> เชื่อมต่อสำเร็จ! พบคลังข้อมูลถูกต้อง';
+                } else {
+                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 block';
+                    resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> เชื่อมต่อไม่สำเร็จ: HTTP ${res.status}`;
+                }
+            } catch (err) {
+                resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 block';
+                resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> การเชื่อมต่อล้มเหลว: ${err.message}`;
+            }
+        }
+
+        function saveSettings() {
+            config.baseUrl = document.getElementById('setting-api-url').value.trim() || DEFAULT_CONFIG.baseUrl;
+            config.tableId = document.getElementById('setting-table-id').value.trim() || DEFAULT_CONFIG.tableId;
+            config.token = document.getElementById('setting-api-token').value.trim() || DEFAULT_CONFIG.token;
+            
+            saveConfigToStorage();
+            closeSettingsModal();
+            fetchAirData(true);
+        }
+
+        // Initialize on Page Load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadStoredConfig();
+            
+            // Sync UI dropdowns with loaded config
+            const refreshSelect = document.getElementById('auto-refresh-select');
+            if (refreshSelect) refreshSelect.value = config.refreshInterval;
+            
+            const limitSelect = document.getElementById('data-limit-select');
+            if (limitSelect) limitSelect.value = config.dataLimit;
+
+            initChart();
+            fetchAirData();
+            startAutoRefresh();
+        });
+    </script>
+</body>
+</html>
