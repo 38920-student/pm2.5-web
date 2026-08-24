@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบเฝ้าระวังและแจ้งเตือนมลพิษฝุ่น PM2.5</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: 1.35rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .time-badge {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background: var(--card-bg);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .status-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-left: 4px solid {{ air_status.color }};
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-title {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.2rem;
+        }
+
+        .status-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: {{ air_status.color }};
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.25rem;
+        }
+
+        .card-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-value {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-unit {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        .chart-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 500;
+            margin: 0 0 1rem 0;
+            color: var(--text-primary);
+        }
+
+        .filter-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-form {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-form label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .filter-form input[type="date"] {
+            border: 1px solid var(--border);
+            background: #fff;
+            padding: 0.4rem 0.6rem;
+            border-radius: 8px;
+            font-family: inherit;
+            color: var(--text-primary);
+        }
+
+        .btn-submit {
+            background: var(--text-primary);
+            color: #fff;
+            border: none;
+            padding: 0.45rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.875rem;
+        }
+
+        .btn-submit:hover { opacity: 0.85; }
+
+        .btn-clear {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            margin-left: auto;
+        }
+
+        .table-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.25rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 0.85rem 0.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.9rem;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        .badge {
+            background: #f1f5f9;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>ระบบเฝ้าระวังและแจ้งเตือนมลพิษฝุ่น PM2.5</h1>
+            <div class="time-badge" id="clock">--:--:--</div>
+        </div>
+
+        <div class="status-card">
+            <div>
+                <div class="status-title">สถานะอากาศปัจจุบัน</div>
+                <div class="status-value">{{ air_status.text }}</div>
+            </div>
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">อ้างอิงจาก PM 2.5</span>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <div class="card-label">ฝุ่น PM 2.5</div>
+                <div class="card-value">
+                    {{ latest.get('PM 2.5 Value', '0') }}
+                    <span class="card-unit">µg/m³</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-label">ระดับก๊าซ (Gas)</div>
+                <div class="card-value">
+                    {{ latest.get('Gas Value', '0') }}
+                    <span class="card-unit">PPM</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-box">
+            <div class="section-title">แนวโน้มค่าฝุ่นและก๊าซ</div>
+            <canvas id="airChart" height="110"></canvas>
+        </div>
+
+        <div class="filter-box">
+            <form action="/" method="get" class="filter-form">
+                <label>ตั้งแต่:</label>
+                <input type="date" name="start_date" value="{{ start_date }}">
+                <label>ถึง:</label>
+                <input type="date" name="end_date" value="{{ end_date }}">
+                <button type="submit" class="btn-submit">ค้นหา</button>
+                {% if start_date or end_date %}
+                    <a href="/" class="btn-clear">ล้างตัวกรอง</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <div class="table-box">
+            <div class="section-title">ประวัติการบันทึก</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>เวลา</th>
+                        <th>PM 2.5</th>
+                        <th>ก๊าซ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in records %}
+                    <tr>
+                        <td>{{ row.get('Timestamp', '-') }}</td>
+                        <td><span class="badge">{{ row.get('PM 2.5 Value', '-') }}</span></td>
+                        <td><span class="badge">{{ row.get('Gas Value', '-') }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 1.5rem;">
+                            ไม่พบข้อมูลในช่วงเวลาที่เลือก
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function updateClock() {
+            document.getElementById('clock').innerText = new Date().toLocaleString('th-TH');
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        const ctx = document.getElementById('airChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ chart_labels | tojson }},
+                datasets: [
+                    {
+                        label: 'PM 2.5 (µg/m³)',
+                        data: {{ chart_pm | tojson }},
+                        borderColor: '#2563eb',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#2563eb',
+                        tension: 0.2
+                    },
+                    {
+                        label: 'Gas (PPM)',
+                        data: {{ chart_gas | tojson }},
+                        borderColor: '#64748b',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#64748b',
+                        tension: 0.2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { boxWidth: 12, font: { family: 'Prompt', size: 12 } }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Prompt', size: 11 }, color: '#64748b' }
+                    },
+                    y: {
+                        grid: { color: '#f1f5f9' },
+                        ticks: { font: { family: 'Prompt', size: 11 }, color: '#64748b' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
