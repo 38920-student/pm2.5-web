@@ -1,18 +1,36 @@
 import os
+import requests
 from datetime import datetime
 from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# เก็บประวัติข้อมูลย้อนหลัง
-data_history = []
+# --- ตั้งค่า NOCODB ---
+NOCODB_URL = "https://app.nocodb.com/api/v3/data/p45cglp3uf0pt7z/m3tvvlkrs3gobi6/records"  # ใส่ URL Table ของคุณ
+NOCODB_TOKEN = "nc_pat_hmNMnwKOLq6MI1FcrZ63uyjtPVwCHobqD2K44iFi"                                   # ใส่ API Token ของ NocoDB
 
-latest_data = {
-    "pm25": 0.63,
-    "gas": 534.82,
-    "status": "อากาศดีมาก",
-    "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+headers = {
+    "xc-token": NOCODB_TOKEN,
+    "Content-Type": "application/json"
 }
+
+def get_nocodb_data():
+    """ดึงข้อมูลประวัติจาก NocoDB"""
+    try:
+        response = requests.get(f"{NOCODB_URL}?limit=15&sort=-Id", headers=headers, timeout=5)
+        if response.status_code == 200:
+            records = response.json().get('list', [])
+            history = []
+            for r in records:
+                history.append({
+                    "time": r.get('created_at', r.get('CreatedAt', '')),
+                    "pm25": r.get('pm25', 0),
+                    "gas": r.get('gas', 0)
+                })
+            return history
+    except Exception as e:
+        print(f"NocoDB Error: {e}")
+    return []
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -43,23 +61,23 @@ HTML_TEMPLATE = """
     <div class="container">
         <div class="header">
             <h2>ระบบติดตามคุณภาพอากาศ</h2>
-            <div class="sub-text" id="time-stamp">{{ timestamp }}</div>
+            <div class="sub-text" id="time-stamp">--/--/---- --:--:--</div>
         </div>
 
         <div class="card status-box">
             <div class="sub-text">สถานะอากาศปัจจุบัน</div>
-            <h3 style="color: #2ecc71; margin: 5px 0;" id="status-text">{{ status }}</h3>
+            <h3 style="color: #2ecc71; margin: 5px 0;" id="status-text">กำลังโหลด...</h3>
             <div class="sub-text" style="float: right; margin-top: -25px;">อ้างอิงจาก PM 2.5</div>
         </div>
 
         <div class="grid-2">
             <div class="card">
                 <div class="sub-text">ฝุ่น PM 2.5</div>
-                <div class="val-num"><span id="pm25-val">{{ pm25 }}</span> <span style="font-size: 16px; color: #666;">µg/m³</span></div>
+                <div class="val-num"><span id="pm25-val">0.00</span> <span style="font-size: 16px; color: #666;">µg/m³</span></div>
             </div>
             <div class="card">
                 <div class="sub-text">ระดับก๊าซ (Gas)</div>
-                <div class="val-num"><span id="gas-val">{{ gas }}</span> <span style="font-size: 16px; color: #666;">PPM</span></div>
+                <div class="val-num"><span id="gas-val">0.00</span> <span style="font-size: 16px; color: #666;">PPM</span></div>
             </div>
         </div>
 
@@ -76,7 +94,7 @@ HTML_TEMPLATE = """
                 <input type="date">
                 <button class="btn-search">ค้นหา</button>
             </div>
-            <h3>ประวัติการบันทึก</h3>
+            <h3>ประวัติการบันทึก (จาก NocoDB)</h3>
             <table>
                 <thead>
                     <tr>
@@ -86,13 +104,6 @@ HTML_TEMPLATE = """
                     </tr>
                 </thead>
                 <tbody id="history-table">
-                    {% for row in history %}
-                    <tr>
-                        <td>{{ row.time }}</td>
-                        <td>{{ row.pm25 }}</td>
-                        <td>{{ row.gas }}</td>
-                    </tr>
-                    {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -112,29 +123,40 @@ HTML_TEMPLATE = """
             options: { responsive: true, scales: { y: { beginAtZero: true } } }
         });
 
-        setInterval(() => {
-            fetch('/data')
+        function loadData() {
+            fetch('/api/data')
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById('pm25-val').innerText = data.pm25;
-                    document.getElementById('gas-val').innerText = data.gas;
-                    document.getElementById('status-text').innerText = data.status;
-                    document.getElementById('time-stamp').innerText = data.timestamp;
+                    if (data.history && data.history.length > 0) {
+                        const latest = data.history[0];
+                        document.getElementById('pm25-val').innerText = latest.pm25;
+                        document.getElementById('gas-val').innerText = latest.gas;
+                        document.getElementById('time-stamp').innerText = latest.time;
+                        
+                        let status = "อากาศดีมาก";
+                        if (latest.pm25 > 37.5) status = "เริ่มมีผลกระทบ";
+                        if (latest.pm25 > 75.0) status = "มีผลกระทบต่อสุขภาพ";
+                        document.getElementById('status-text').innerText = status;
 
-                    // อัปเดตกราฟ
-                    airChart.data.labels = data.history.map(h => h.time.split(' ')[1]);
-                    airChart.data.datasets[0].data = data.history.map(h => h.pm25);
-                    airChart.data.datasets[1].data = data.history.map(h => h.gas);
-                    airChart.update();
+                        // อัปเดตกราฟ
+                        const reversedData = [...data.history].reverse();
+                        airChart.data.labels = reversedData.map(h => h.time);
+                        airChart.data.datasets[0].data = reversedData.map(h => h.pm25);
+                        airChart.data.datasets[1].data = reversedData.map(h => h.gas);
+                        airChart.update();
 
-                    // อัปเดตตาราง
-                    let tableHTML = '';
-                    data.history.forEach(h => {
-                        tableHTML += `<tr><td>${h.time}</td><td>${h.pm25}</td><td>${h.gas}</td></tr>`;
-                    });
-                    document.getElementById('history-table').innerHTML = tableHTML;
+                        // อัปเดตตาราง
+                        let tableHTML = '';
+                        data.history.forEach(h => {
+                            tableHTML += `<tr><td>${h.time}</td><td>${h.pm25}</td><td>${h.gas}</td></tr>`;
+                        });
+                        document.getElementById('history-table').innerHTML = tableHTML;
+                    }
                 });
-        }, 3000);
+        }
+
+        loadData();
+        setInterval(loadData, 5000); // อัปเดตข้อมูลทุก 5 วินาที
     </script>
 </body>
 </html>
@@ -142,51 +164,12 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def home():
-    return render_template_string(
-        HTML_TEMPLATE, 
-        pm25=latest_data['pm25'], 
-        gas=latest_data['gas'], 
-        status=latest_data['status'],
-        timestamp=latest_data['timestamp'],
-        history=data_history
-    )
+    return render_template_string(HTML_TEMPLATE)
 
-@app.route('/update', methods=['POST'])
-def update():
-    global latest_data, data_history
-    req_data = request.get_json()
-    if req_data:
-        pm_val = float(req_data.get('pm25', 0))
-        gas_val = float(req_data.get('gas', 0))
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        status = "อากาศดีมาก"
-        if pm_val > 37.5: status = "เริ่มมีผลกระทบ"
-        if pm_val > 75.0: status = "มีผลกระทบต่อสุขภาพ"
-
-        latest_data = {
-            "pm25": pm_val,
-            "gas": gas_val,
-            "status": status,
-            "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        }
-        
-        # เพิ่มเข้าประวัติ (เก็บสูงสุด 15 ค่าย้อนหลัง)
-        data_history.insert(0, {"time": now_str, "pm25": pm_val, "gas": gas_val})
-        data_history = data_history[:15]
-        
-        return jsonify({"message": "Success"}), 200
-    return jsonify({"message": "Invalid data"}), 400
-
-@app.route('/data')
-def get_data():
-    return jsonify({
-        "pm25": latest_data['pm25'],
-        "gas": latest_data['gas'],
-        "status": latest_data['status'],
-        "timestamp": latest_data['timestamp'],
-        "history": data_history
-    })
+@app.route('/api/data')
+def api_data():
+    history = get_nocodb_data()
+    return jsonify({"history": history})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
