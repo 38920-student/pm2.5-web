@@ -1,5 +1,6 @@
 import network
 import urequests
+import ujson
 from machine import Pin, ADC
 import time
 import ntptime
@@ -164,7 +165,12 @@ def send_telegram_alert(pm25_val, gas_val, time_str, device_id="a1"):
 
     try:
         print("[Telegram] กำลังส่งการแจ้งเตือนไปยัง Telegram...")
-        res = urequests.post(telegram_url, headers={"Content-Type": "application/json"}, json=payload)
+        body_bytes = ujson.dumps(payload).encode('utf-8')
+        tg_headers = {
+            "Content-Type": "application/json; charset=utf-8",
+            "Content-Length": str(len(body_bytes))
+        }
+        res = urequests.post(telegram_url, headers=tg_headers, data=body_bytes)
         if res.status_code == 200:
             print("[Telegram] ส่งแจ้งเตือนสำเร็จ!")
             last_alert_time = current_ticks
@@ -202,7 +208,14 @@ while True:
 
     try:
         print("Sending data to NocoDB...")
-        response = urequests.post(url, headers=headers, json=data)
+        noco_bytes = ujson.dumps(data).encode('utf-8')
+        noco_headers = {
+            "accept": "application/json",
+            "xc-token": "U3WjT_etA7hXLe2uFhVhFYvLppouR3-W--CqCnO8",
+            "Content-Type": "application/json",
+            "Content-Length": str(len(noco_bytes))
+        }
+        response = urequests.post(url, headers=noco_headers, data=noco_bytes)
         print("Status Code:", response.status_code)
         print("Response text:", response.text)
         response.close()
