@@ -63,7 +63,17 @@ headers = {
 }
 
 # ==========================================
-# 4. Helper Functions
+# 4. Telegram Notification Configuration
+# ==========================================
+# ใส่ Bot Token และ Chat ID ของคุณที่นี่ (เช่น Token จาก @BotFather และ ID จาก @userinfobot)
+TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # เช่น "123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+TELEGRAM_CHAT_ID = "YOUR_TELEGRAM_CHAT_ID"      # เช่น "123456789" หรือ ID กลุ่ม "-100123456789"
+PM25_ALERT_THRESHOLD = 75.0                     # เกณฑ์แจ้งเตือน PM 2.5 (> 75 µg/m³ = มีผลกระทบต่อสุขภาพ)
+ALERT_COOLDOWN_SECONDS = 300                    # ระยะเวลาหน่วงการส่งแจ้งเตือนซ้ำ (300 วินาที = 5 นาที) เพื่อไม่ให้ส่งถี่เกินไป
+last_alert_time = 0
+
+# ==========================================
+# 5. Helper Functions
 # ==========================================
 
 def get_iso_timestamp():
@@ -113,8 +123,60 @@ def read_gas_sensor(samples=10):
         
     return status, round(avg_raw, 0), round(gas_voltage, 2), round(gas_ppm, 2)
 
+def send_telegram_alert(pm25_val, gas_val, time_str, device_id="a1"):
+    """ส่งข้อความแจ้งเตือนภาษาไทยไปยัง Telegram เมื่อ PM 2.5 เกินเกณฑ์ 75 µg/m³"""
+    global last_alert_time
+    
+    # ตรวจสอบว่ามีการใส่ Token แล้วหรือยัง
+    if TELEGRAM_BOT_TOKEN == "YOUR_TELEGRAM_BOT_TOKEN" or TELEGRAM_CHAT_ID == "YOUR_TELEGRAM_CHAT_ID":
+        print("[Telegram] ข้ามการส่ง: ยังไม่ได้ตั้งค่า TELEGRAM_BOT_TOKEN หรือ TELEGRAM_CHAT_ID")
+        return
+        
+    current_ticks = time.time()
+    if current_ticks - last_alert_time < ALERT_COOLDOWN_SECONDS:
+        print("[Telegram] ข้ามการส่ง: อยู่ในช่วง Cooldown (เหลือ {} วินาที)".format(
+            int(ALERT_COOLDOWN_SECONDS - (current_ticks - last_alert_time))
+        ))
+        return
+
+    # ข้อความภาษาไทยแจ้งเตือนสถานการณ์วิกฤต
+    message = (
+        "🚨 <b>แจ้งเตือนคุณภาพอากาศวิกฤต!</b> 🚨\n\n"
+        "⚠️ <b>ค่าฝุ่น PM 2.5 เกินมาตรฐานความปลอดภัย</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "🔴 <b>สถานะ:</b> มีผลกระทบต่อสุขภาพ (Hazardous)\n"
+        "📊 <b>ค่า PM 2.5:</b> <code>{:.2f}</code> µg/m³ (เกณฑ์วิกฤต > 75.0)\n"
+        "💨 <b>ระดับก๊าซ:</b> <code>{:.2f}</code> PPM\n"
+        "📍 <b>อุปกรณ์:</b> {}\n"
+        "🕒 <b>เวลาตรวจวัด:</b> {}\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "😷 <b>คำแนะนำด้านสุขภาพ:</b>\n"
+        "• หลีกเลี่ยงกิจกรรมกลางแจ้งทุกประเภท\n"
+        "• ปิดประตูหน้าต่างให้มิดชิด และเปิดเครื่องฟอกอากาศ\n"
+        "• สวมหน้ากากป้องกันฝุ่น N95 ทันทีเมื่อจำเป็นต้องออกนอกอาคาร"
+    ).format(pm25_val, gas_val, device_id, time_str)
+
+    telegram_url = "https://api.telegram.org/bot{}/sendMessage".format(TELEGRAM_BOT_TOKEN)
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+        "parse_mode": "HTML"
+    }
+
+    try:
+        print("[Telegram] กำลังส่งการแจ้งเตือนไปยัง Telegram...")
+        res = urequests.post(telegram_url, headers={"Content-Type": "application/json"}, json=payload)
+        if res.status_code == 200:
+            print("[Telegram] ส่งแจ้งเตือนสำเร็จ!")
+            last_alert_time = current_ticks
+        else:
+            print("[Telegram] ส่งไม่สำเร็จ Status Code:", res.status_code, "Response:", res.text)
+        res.close()
+    except Exception as e:
+        print("[Telegram] Error:", e)
+
 # ==========================================
-# 5. Main Loop
+# 6. Main Loop
 # ==========================================
 while True:
     dust_val, dust_volt = get_smooth_dust(samples=10)
@@ -125,7 +187,12 @@ while True:
     print("ฝุ่น PM2.5: {} µg/m³ (แรงดัน: {:.2f}V)".format(dust_val, dust_volt))
     print("ก๊าซ MQ-135: Raw = {} | แรงดัน = {:.2f}V | PPM = {:.2f} ppm | สถานะ: {}".format(gas_raw, gas_volt, gas_ppm, gas_status))
 
-    # NocoDB v2 API รับ JSON Object โดยตรง (ไม่ต้องครอบด้วย list และไม่ต้องมี "fields")
+    # ตรวจสอบเงื่อนไข PM2.5 > 75 µg/m³ เพื่อส่งแจ้งเตือน Telegram
+    if dust_val > PM25_ALERT_THRESHOLD:
+        print("⚠️ ค่าฝุ่น PM2.5 เกินเกณฑ์ความปลอดภัย ({:.2f} > {})!".format(dust_val, PM25_ALERT_THRESHOLD))
+        send_telegram_alert(dust_val, gas_ppm, current_time, device_id="a1")
+
+    # บันทึกข้อมูลลง NocoDB
     data = {
         "Device ID": "a1",
         "PM 2.5 Value": dust_val,

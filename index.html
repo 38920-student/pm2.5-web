@@ -482,6 +482,28 @@
                     <input type="password" id="setting-api-token" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="U3WjT_etA7hXLe2uFhVhFYvLppouR3-W--CqCnO8">
                 </div>
 
+                <hr class="border-slate-200 my-2">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-brands fa-telegram text-sky-500 text-sm"></i>
+                            การแจ้งเตือน Telegram (เมื่อ PM 2.5 &gt; 75)
+                        </span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="setting-tg-enabled" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-600"></div>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 font-medium mb-1">Telegram Bot Token</label>
+                        <input type="password" id="setting-tg-token" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ">
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 font-medium mb-1">Telegram Chat ID</label>
+                        <input type="text" id="setting-tg-chatid" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="123456789 หรือ -100123456789">
+                    </div>
+                </div>
+
                 <div id="settings-test-result" class="hidden p-2.5 rounded-lg text-xs font-medium"></div>
             </div>
 
@@ -490,8 +512,11 @@
                     คืนค่าเริ่มต้น
                 </button>
                 <div class="flex gap-2">
+                    <button onclick="testTelegramAlert()" class="px-3 py-2 rounded-lg border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-medium transition">
+                        <i class="fa-brands fa-telegram mr-1"></i> ทดสอบส่ง Telegram
+                    </button>
                     <button onclick="testConnection()" class="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium transition">
-                        ทดสอบการเชื่อมต่อ
+                        ทดสอบ NocoDB
                     </button>
                     <button onclick="saveSettings()" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-medium transition shadow-sm">
                         บันทึกการตั้งค่า
@@ -503,14 +528,17 @@
 
     <!-- JavaScript Application Logic -->
     <script>
-        // Default Configuration (Updated with noco.phukhieo.ac.th)
+        // Default Configuration (Updated with noco.phukhieo.ac.th & Telegram)
         const DEFAULT_CONFIG = {
             baseUrl: "https://noco.phukhieo.ac.th",
             tableId: "mmo2nkzx4m7mc2d",
             token: "U3WjT_etA7hXLe2uFhVhFYvLppouR3-W--CqCnO8",
             refreshInterval: 5000,
             dataLimit: 25,
-            version: "2.0"
+            telegramToken: "",
+            telegramChatId: "",
+            telegramEnabled: false,
+            version: "2.1"
         };
 
         // App State
@@ -524,6 +552,8 @@
         let activeChartSeries = 'all'; // 'all', 'pm25', 'gas'
         let currentPage = 1;
         const rowsPerPage = 10;
+        let lastTelegramAlertTime = 0;
+        const TELEGRAM_ALERT_COOLDOWN = 300000; // 5 minutes in ms
 
         // Load saved config from localStorage with auto-upgrade support
         function loadStoredConfig() {
@@ -535,7 +565,6 @@
                     console.error('Error loading config from localStorage:', e);
                 }
             } else {
-                // First time or upgraded to v2, save defaults
                 saveConfigToStorage();
             }
         }
@@ -740,6 +769,53 @@
             }
         }
 
+        // Send Telegram notification from Web
+        async function triggerTelegramAlert(pm25, gas, timeStr, deviceId = "a1") {
+            if (!config.telegramEnabled || !config.telegramToken || !config.telegramChatId) return;
+
+            const now = Date.now();
+            if (now - lastTelegramAlertTime < TELEGRAM_ALERT_COOLDOWN) {
+                console.log("[Telegram] Alert skipped: cooldown active");
+                return;
+            }
+
+            const message = `🚨 <b>แจ้งเตือนคุณภาพอากาศวิกฤต!</b> 🚨\n\n` +
+                `⚠️ <b>ค่าฝุ่น PM 2.5 เกินมาตรฐานความปลอดภัย</b>\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `🔴 <b>ระดับ:</b> มีผลกระทบต่อสุขภาพ (Hazardous)\n` +
+                `📊 <b>PM 2.5:</b> <code>${pm25.toFixed(2)}</code> µg/m³ (เกณฑ์วิกฤต > 75.0)\n` +
+                `💨 <b>ระดับก๊าซ:</b> <code>${gas.toFixed(2)}</code> PPM\n` +
+                `📍 <b>อุปกรณ์:</b> ${deviceId}\n` +
+                `🕒 <b>เวลาตรวจวัด:</b> ${timeStr}\n` +
+                `━━━━━━━━━━━━━━━━━━━━\n` +
+                `😷 <b>คำแนะนำสุขภาพ:</b>\n` +
+                `• หลีกเลี่ยงกิจกรรมกลางแจ้งทุกประเภท\n` +
+                `• ปิดประตูหน้าต่างให้มิดชิด และเปิดเครื่องฟอกอากาศ\n` +
+                `• สวมหน้ากากป้องกันฝุ่น N95 ทันทีเมื่อจำเป็นต้องออกนอกอาคาร`;
+
+            try {
+                const tgUrl = `https://api.telegram.org/bot${config.telegramToken}/sendMessage`;
+                const res = await fetch(tgUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: config.telegramChatId,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
+                });
+
+                if (res.ok) {
+                    console.log("[Telegram] Web notification sent successfully!");
+                    lastTelegramAlertTime = now;
+                } else {
+                    console.error("[Telegram] Web notification failed:", await res.text());
+                }
+            } catch (err) {
+                console.error("[Telegram] Error sending web notification:", err);
+            }
+        }
+
         // Fetch Data directly from NocoDB API
         async function fetchAirData(isManual = false) {
             const refreshIcon = document.getElementById('refresh-icon');
@@ -785,6 +861,11 @@
                         fullFormatted: dt.full
                     };
                 });
+
+                // Check PM 2.5 alert threshold (> 75)
+                if (allRecords.length > 0 && allRecords[0].pm25 > 75.0) {
+                    triggerTelegramAlert(allRecords[0].pm25, allRecords[0].gas, allRecords[0].fullFormatted, allRecords[0].deviceId);
+                }
 
                 // Update UI elements
                 updateDashboardUI(allRecords, data.pageInfo?.totalRows || allRecords.length);
@@ -1132,6 +1213,9 @@
             document.getElementById('setting-api-url').value = config.baseUrl;
             document.getElementById('setting-table-id').value = config.tableId;
             document.getElementById('setting-api-token').value = config.token;
+            document.getElementById('setting-tg-token').value = config.telegramToken || '';
+            document.getElementById('setting-tg-chatid').value = config.telegramChatId || '';
+            document.getElementById('setting-tg-enabled').checked = !!config.telegramEnabled;
             document.getElementById('settings-test-result').classList.add('hidden');
             document.getElementById('settings-modal').classList.remove('hidden');
         }
@@ -1144,6 +1228,53 @@
             document.getElementById('setting-api-url').value = DEFAULT_CONFIG.baseUrl;
             document.getElementById('setting-table-id').value = DEFAULT_CONFIG.tableId;
             document.getElementById('setting-api-token').value = DEFAULT_CONFIG.token;
+            document.getElementById('setting-tg-token').value = '';
+            document.getElementById('setting-tg-chatid').value = '';
+            document.getElementById('setting-tg-enabled').checked = false;
+        }
+
+        async function testTelegramAlert() {
+            const token = document.getElementById('setting-tg-token').value.trim();
+            const chatId = document.getElementById('setting-tg-chatid').value.trim();
+            const resultBox = document.getElementById('settings-test-result');
+
+            if (!token || !chatId) {
+                resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 block';
+                resultBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> กรุณากรอกทั้ง Telegram Bot Token และ Chat ID ก่อนทดสอบ';
+                return;
+            }
+
+            resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 block';
+            resultBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังส่งข้อความทดสอบไปยัง Telegram...';
+
+            const testMsg = `🔔 <b>ทดสอบการเชื่อมต่อ Telegram สำเร็จ!</b>\n\n` +
+                `ระบบติดตามคุณภาพอากาศ AirGuard พร้อมส่งแจ้งเตือนเมื่อค่าฝุ่น PM 2.5 &gt; 75 µg/m³\n` +
+                `🕒 เวลา: ${new Date().toLocaleString('th-TH')}`;
+
+            try {
+                const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+                const res = await fetch(tgUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: testMsg,
+                        parse_mode: 'HTML'
+                    })
+                });
+
+                if (res.ok) {
+                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 block';
+                    resultBox.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i> ส่งข้อความเข้า Telegram สำเร็จ!';
+                } else {
+                    const errJson = await res.json();
+                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 block';
+                    resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> ส่งไม่สำเร็จ: ${errJson.description || 'HTTP ' + res.status}`;
+                }
+            } catch (err) {
+                resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 block';
+                resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> เกิดข้อผิดพลาด: ${err.message}`;
+            }
         }
 
         async function testConnection() {
@@ -1181,6 +1312,9 @@
             config.baseUrl = document.getElementById('setting-api-url').value.trim() || DEFAULT_CONFIG.baseUrl;
             config.tableId = document.getElementById('setting-table-id').value.trim() || DEFAULT_CONFIG.tableId;
             config.token = document.getElementById('setting-api-token').value.trim() || DEFAULT_CONFIG.token;
+            config.telegramToken = document.getElementById('setting-tg-token').value.trim();
+            config.telegramChatId = document.getElementById('setting-tg-chatid').value.trim();
+            config.telegramEnabled = document.getElementById('setting-tg-enabled').checked;
             
             saveConfigToStorage();
             closeSettingsModal();
