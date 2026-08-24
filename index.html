@@ -1148,7 +1148,7 @@
             }
 
             let csvContent = "\uFEFF"; // UTF-8 BOM for Thai characters in Excel
-            csvContent += "ID,Device ID,Timestamp,PM 2.5 (ug/m3),Gas Value (PPM),Gas Type,AQI Status\n";
+            csvContent += "ID,Device ID,Timestamp,PM 2.5 (µg/m³),Gas Value (PPM),Gas Type,AQI Status\n";
 
             filteredRecords.forEach(r => {
                 const aqi = getAQIStatus(r.pm25);
