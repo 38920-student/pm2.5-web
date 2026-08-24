@@ -78,5 +78,4 @@ def index():
                            chart_gas=chart_gas)
 
 if __name__ == '__main__':
-    # กำหนด host='0.0.0.0' เพื่อเปิดรับการเชื่อมต่อจากภายนอก
     app.run(host='0.0.0.0', port=5000, debug=True)
