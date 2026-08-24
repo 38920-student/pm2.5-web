@@ -6,7 +6,7 @@ from flask import Flask, render_template_string, request, jsonify
 app = Flask(__name__)
 
 # --- ตั้งค่า NOCODB ---
-NOCODB_URL = "https://app.nocodb.com/api/v3/data/p45cglp3uf0pt7z/m3tvvlkrs3gobi6/records"  # ใส่ URL Table ของคุณ
+NOCODB_URL = "https://app.nocodb.com/wf0x3zfl/p45cglp3uf0pt7z/m3tvvlkrs3gobi6/vwy052qpo06lg1hg/sensor-readings-sensor-readings"  # ใส่ URL Table ของคุณ
 NOCODB_TOKEN = "nc_pat_hmNMnwKOLq6MI1FcrZ63uyjtPVwCHobqD2K44iFi"                                   # ใส่ API Token ของ NocoDB
 
 headers = {
