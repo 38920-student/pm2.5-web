@@ -1,9 +1,18 @@
 # 🌿 AirGuard - ระบบติดตามคุณภาพอากาศ PM 2.5 & ก๊าซ Real-time
 
-เว็บแอปพลิเคชันสำหรับเฝ้าระวังคุณภาพอากาศและฝุ่นละออง PM 2.5 แบบ Real-time ที่ออกแบบมาเพื่อเผยแพร่บน **GitHub Pages** ได้ทันที โดยดึงข้อมูลโดยตรงจาก **NocoDB API** ผ่านทาง Client-side JavaScript
+เว็บแอปพลิเคชันสำหรับเฝ้าระวังคุณภาพอากาศและฝุ่นละออง PM 2.5 แบบ Real-time ที่ออกแบบมาเพื่อเผยแพร่บน **GitHub Pages** ได้ทันที โดยดึงข้อมูลโดยตรงจาก **NocoDB API** (`noco.phukhieo.ac.th`) ผ่านทาง Client-side JavaScript
 
 🔗 **GitHub Repository**: [https://github.com/38920-student/pm2.5-web](https://github.com/38920-student/pm2.5-web)  
 🌐 **ลิงก์หน้าเว็บ GitHub Pages (เมื่อเปิดใช้งาน)**: [https://38920-student.github.io/pm2.5-web/](https://38920-student.github.io/pm2.5-web/)
+
+---
+
+## 📡 ข้อมูลการเชื่อมต่อ NocoDB API (Current Endpoint)
+
+- **API Base URL**: `https://noco.phukhieo.ac.th`
+- **Table ID**: `mmo2nkzx4m7mc2d`
+- **API Endpoint**: `https://noco.phukhieo.ac.th/api/v2/tables/mmo2nkzx4m7mc2d/records?limit=25&sort=-Id`
+- **Header Auth**: `xc-token: U3WjT_etA7hXLe2uFhVhFYvLppouR3-W--CqCnO8`
 
 ---
 
@@ -17,7 +26,7 @@
 2. **กราฟแนวโน้มแบบโต้ตอบ (Interactive Chart.js)**
    - กราฟเส้นแสดงความสัมพันธ์ระหว่าง PM 2.5 และระดับก๊าซ
    - สลับดูเฉพาะ PM 2.5, ก๊าซ หรือดูพร้อมกันทั้งสองแกน
-   - เลือกแสดงข้อมูล 15, 30, 50 หรือ 100 รายการล่าสุด
+   - เลือกแสดงข้อมูล 15, 25, 50 หรือ 100 รายการล่าสุด
 
 3. **ระบบอัปเดตข้อมูลอัตโนมัติ (Auto-refresh)**
    - ตั้งเวลารีเฟรชอัตโนมัติ (5 วิ, 10 วิ, 30 วิ, 1 นาที หรือปิด)
@@ -38,13 +47,11 @@
 
 ## 🚀 วิธีเผยแพร่และเปิดใช้งานบน GitHub Pages (Step-by-step Guide)
 
-ทำตามขั้นตอนด้านล่างนี้เพื่อเปิดใช้งานเว็บไซต์บน GitHub Pages:
-
 ### ขั้นตอนที่ 1: อัปโหลด / Push โค้ดขึ้น GitHub
 เมื่อมีการแก้ไขไฟล์ในโฟลเดอร์ ให้ส่งโค้ดขึ้น repository บน GitHub:
 ```bash
 git add .
-git commit -m "Add modern Air Quality dashboard for GitHub Pages"
+git commit -m "Update NocoDB endpoint to noco.phukhieo.ac.th"
 git push origin main
 ```
 
@@ -69,8 +76,6 @@ git push origin main
 ---
 
 ## 💻 การทดสอบใช้งานในเครื่อง Local (Optional)
-
-หากต้องการเปิดทดสอบบนเครื่องคอมพิวเตอร์ของคุณ สามารถทำได้ 2 วิธี:
 
 ### วิธีที่ 1: ดับเบิลคลิกเปิดไฟล์
 - ดับเบิลคลิกไฟล์ `index.html` เพื่อเปิดบน Google Chrome, Microsoft Edge หรือเบราว์เซอร์ใดก็ได้

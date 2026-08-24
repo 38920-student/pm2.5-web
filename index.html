@@ -93,7 +93,7 @@
                         <h1 class="text-lg font-bold bg-gradient-to-r from-slate-900 via-sky-900 to-indigo-900 bg-clip-text text-transparent leading-tight">
                             AirGuard Dashboard
                         </h1>
-                        <p class="text-xs text-slate-500 hidden sm:block">ระบบเฝ้าระวังคุณภาพอากาศและฝุ่นละออง PM 2.5</p>
+                        <p class="text-xs text-slate-500 hidden sm:block">ระบบเฝ้าระวังคุณภาพอากาศและฝุ่นละออง PM 2.5 & ก๊าซ</p>
                     </div>
                 </div>
 
@@ -144,6 +144,9 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="text-xs uppercase tracking-wider font-semibold bg-white/25 px-2.5 py-0.5 rounded-full">สถานะคุณภาพอากาศปัจจุบัน</span>
                         <span id="device-id-badge" class="text-xs bg-black/20 px-2 py-0.5 rounded-full font-mono">Device: a1</span>
+                        <span id="server-badge" class="text-[11px] bg-sky-900/40 border border-white/20 px-2 py-0.5 rounded-full font-mono text-sky-100 hidden sm:inline-flex items-center gap-1">
+                            <i class="fa-solid fa-server text-[10px]"></i> noco.phukhieo.ac.th
+                        </span>
                     </div>
                     <h2 id="banner-status-title" class="text-2xl sm:text-3xl font-bold mt-1 tracking-tight">คุณภาพอากาศดีมาก</h2>
                     <p id="banner-status-desc" class="text-sm sm:text-base text-white/90 mt-0.5 font-light">คุณภาพอากาศอยู่ในเกณฑ์ดีเยี่ยม สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</p>
@@ -267,7 +270,7 @@
                 <div class="flex justify-between items-start">
                     <div>
                         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">การบันทึกข้อมูล</span>
-                        <h3 class="text-lg font-bold text-slate-800">จำนวนบันทึก</h3>
+                        <h3 class="text-lg font-bold text-slate-800">จำนวนบันทึกทั้งหมด</h3>
                     </div>
                     <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
                         <i class="fa-solid fa-database"></i>
@@ -281,7 +284,7 @@
 
                 <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                     <span class="text-slate-500">แหล่งข้อมูล:</span>
-                    <span class="font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">NocoDB Cloud API</span>
+                    <span class="font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">NocoDB @ Phukhieo</span>
                 </div>
             </div>
 
@@ -310,7 +313,7 @@
                     <!-- Limit Selector -->
                     <select id="data-limit-select" onchange="changeDataLimit(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
                         <option value="15">15 รายการล่าสุด</option>
-                        <option value="30">30 รายการล่าสุด</option>
+                        <option value="25" selected>25 รายการล่าสุด</option>
                         <option value="50">50 รายการล่าสุด</option>
                         <option value="100">100 รายการล่าสุด</option>
                     </select>
@@ -448,7 +451,7 @@
     <footer class="bg-white border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-500">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
             <p>Air Quality Monitoring Dashboard &bull; พร้อมใช้งานบน GitHub Pages</p>
-            <p class="text-slate-400">เชื่อมต่อ NocoDB API Real-time &bull; แสดงผลข้อมูลเซนเซอร์วัดค่าฝุ่น PM 2.5 และก๊าซ</p>
+            <p class="text-slate-400">เชื่อมต่อ NocoDB API (<code class="text-slate-500">noco.phukhieo.ac.th</code>) Real-time &bull; แสดงผลข้อมูลเซนเซอร์วัดค่าฝุ่น PM 2.5 และก๊าซ</p>
         </div>
     </footer>
 
@@ -468,15 +471,15 @@
             <div class="space-y-4 text-xs">
                 <div>
                     <label class="block text-slate-700 font-medium mb-1">NocoDB API Base URL</label>
-                    <input type="text" id="setting-api-url" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="https://app.nocodb.com">
+                    <input type="text" id="setting-api-url" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="https://noco.phukhieo.ac.th">
                 </div>
                 <div>
                     <label class="block text-slate-700 font-medium mb-1">Table ID (หรือ View ID)</label>
-                    <input type="text" id="setting-table-id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="m3tvvlkrs3gobi6">
+                    <input type="text" id="setting-table-id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="mmo2nkzx4m7mc2d">
                 </div>
                 <div>
                     <label class="block text-slate-700 font-medium mb-1">NocoDB API Token (xc-token)</label>
-                    <input type="password" id="setting-api-token" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="nc_pat_...">
+                    <input type="password" id="setting-api-token" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="U3WjT_etA7hXLe2uFhVhFYvLppouR3-W--CqCnO8">
                 </div>
 
                 <div id="settings-test-result" class="hidden p-2.5 rounded-lg text-xs font-medium"></div>
@@ -500,13 +503,14 @@
 
     <!-- JavaScript Application Logic -->
     <script>
-        // Default Configuration
+        // Default Configuration (Updated with noco.phukhieo.ac.th)
         const DEFAULT_CONFIG = {
-            baseUrl: "https://app.nocodb.com",
-            tableId: "m3tvvlkrs3gobi6",
-            token: "nc_pat_hmNMnwKOLq6MI1FcrZ63uyjtPVwCHobqD2K44iFi",
+            baseUrl: "https://noco.phukhieo.ac.th",
+            tableId: "mmo2nkzx4m7mc2d",
+            token: "U3WjT_etA7hXLe2uFhVhFYvLppouR3-W--CqCnO8",
             refreshInterval: 5000,
-            dataLimit: 15
+            dataLimit: 25,
+            version: "2.0"
         };
 
         // App State
@@ -521,21 +525,24 @@
         let currentPage = 1;
         const rowsPerPage = 10;
 
-        // Load saved config from localStorage
+        // Load saved config from localStorage with auto-upgrade support
         function loadStoredConfig() {
-            const saved = localStorage.getItem('airguard_config');
+            const saved = localStorage.getItem('airguard_config_v2');
             if (saved) {
                 try {
                     config = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
                 } catch (e) {
                     console.error('Error loading config from localStorage:', e);
                 }
+            } else {
+                // First time or upgraded to v2, save defaults
+                saveConfigToStorage();
             }
         }
 
         // Save config
         function saveConfigToStorage() {
-            localStorage.setItem('airguard_config', JSON.stringify(config));
+            localStorage.setItem('airguard_config_v2', JSON.stringify(config));
         }
 
         // Initialize Chart.js
@@ -618,7 +625,7 @@
                                 font: { family: 'Prompt', size: 11 },
                                 maxRotation: 45,
                                 autoSkip: true,
-                                maxTicksLimit: 10
+                                maxTicksLimit: 12
                             }
                         },
                         y: {
@@ -744,6 +751,7 @@
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
+                        'accept': 'application/json',
                         'xc-token': config.token,
                         'Content-Type': 'application/json'
                     }
@@ -760,7 +768,7 @@
                 allRecords = rawList.map(item => {
                     const pm25 = parseFloat(item['PM 2.5 Value'] ?? item.pm25 ?? item['PM2.5'] ?? 0);
                     const gas = parseFloat(item['Gas Value'] ?? item.gas ?? item['Gas'] ?? 0);
-                    const gasType = item['Gas Type'] ?? item.gas_type ?? 'CO';
+                    const gasType = item['Gas Type'] ?? item.gas_type ?? 'co';
                     const deviceId = item['Device ID'] ?? item.device_id ?? 'a1';
                     const rawTime = item.Timestamp || item.CreatedAt || item.created_at || '';
                     const dt = formatDateTime(rawTime);
@@ -1150,7 +1158,10 @@
             try {
                 const testUrl = `${urlInput}/api/v2/tables/${tableInput}/records?limit=1`;
                 const res = await fetch(testUrl, {
-                    headers: { 'xc-token': tokenInput }
+                    headers: { 
+                        'accept': 'application/json',
+                        'xc-token': tokenInput 
+                    }
                 });
 
                 if (res.ok) {
