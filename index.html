@@ -891,9 +891,9 @@
                             grid: { color: 'rgba(226, 232, 240, 0.6)' },
                             ticks: {
                                 font: { family: 'Prompt', size: 11 },
-                                maxRotation: 45,
+                                maxRotation: 30,
                                 autoSkip: true,
-                                maxTicksLimit: 12
+                                maxTicksLimit: 10
                             }
                         },
                         y: {
@@ -907,7 +907,13 @@
                                 color: '#0284c7'
                             },
                             grid: { color: 'rgba(226, 232, 240, 0.6)' },
-                            beginAtZero: true
+                            beginAtZero: true,
+                            grace: '8%',
+                            ticks: {
+                                font: { family: 'Prompt', size: 11 },
+                                maxTicksLimit: 6,
+                                precision: 0
+                            }
                         },
                         y1: {
                             type: 'linear',
@@ -920,7 +926,13 @@
                                 color: '#9333ea'
                             },
                             grid: { drawOnChartArea: false },
-                            beginAtZero: false
+                            beginAtZero: true,
+                            grace: '8%',
+                            ticks: {
+                                font: { family: 'Prompt', size: 11 },
+                                maxTicksLimit: 6,
+                                precision: 0
+                            }
                         }
                     }
                 }
@@ -1304,8 +1316,8 @@
         function updateChartData(records) {
             if (!chartInstance) return;
 
-            // Records are sorted desc, reverse for chronological chart
-            const chartRecords = [...records].reverse();
+            // Take latest 50 records for clear readability, reverse for chronological chart
+            const chartRecords = records.slice(0, 50).reverse();
             const labels = chartRecords.map(r => r.timeFormatted || r.rawTime);
             const pmData = chartRecords.map(r => r.pm25);
             const gasData = chartRecords.map(r => r.gas);
