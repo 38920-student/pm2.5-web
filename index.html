@@ -473,14 +473,6 @@
                     </h3>
                     <p class="text-xs text-slate-500 mt-0.5">รายการข้อมูลเซนเซอร์ย้อนหลังจาก NocoDB</p>
                 </div>
-
-                <!-- Export & Search Tools -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <button onclick="exportToCSV()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition shadow-sm">
-                        <i class="fa-solid fa-file-excel"></i>
-                        ส่งออก CSV
-                    </button>
-                </div>
             </div>
 
             <!-- Filter Controls with Dedicated Search Button -->
@@ -1584,33 +1576,6 @@
             const searchStatus = document.getElementById('history-search-status');
             if (searchStatus) searchStatus.className = 'hidden';
             fetchAirData(true);
-        }
-
-        // Export data to CSV file
-        function exportToCSV() {
-            if (!filteredRecords || filteredRecords.length === 0) {
-                alert('ไม่มีข้อมูลสำหรับส่งออก');
-                return;
-            }
-
-            let csvContent = "\uFEFF"; // UTF-8 BOM for Thai characters in Excel
-            csvContent += "ID,Device ID,Timestamp,PM 2.5 (µg/m³),Gas Value (PPM),Gas Type,AQI Status\n";
-
-            filteredRecords.forEach(r => {
-                const aqi = getAQIStatus(r.pm25);
-                const statusTitle = aqi.label.replace(/"/g, '""');
-                csvContent += `"${r.id}","${r.deviceId}","${r.fullFormatted}","${r.pm25}","${r.gas}","${r.gasType}","${statusTitle}"\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `air_quality_records_${new Date().toISOString().slice(0, 10)}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
         }
 
         // Auto Refresh Interval handling
