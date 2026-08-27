@@ -16,8 +16,10 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- Chart.js CDN -->
+    <!-- Chart.js CDN & Zoom Plugin (with Touch & Mouse Support) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 
     <!-- Flatpickr Date Picker (Thai Buddhist Era พ.ศ.) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -354,12 +356,30 @@
                         <i class="fa-regular fa-calendar text-sky-600"></i>
                         <input type="text" id="chart-date-picker" placeholder="เลือกวันที่ (พ.ศ.)" title="เลือกดูตามปฏิทิน (พ.ศ.)" class="bg-transparent text-slate-800 font-medium focus:outline-none cursor-pointer text-xs w-24 sm:w-28">
                     </div>
+
+                    <!-- 4. Interactive Zoom Tools -->
+                    <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs" title="เครื่องมือซูมกราฟ">
+                        <button onclick="zoomChart(1.3)" title="ซูมเข้า (+)" class="px-2 py-1 rounded-md text-slate-600 hover:text-sky-600 hover:bg-white transition"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                        <button onclick="zoomChart(0.7)" title="ซูมออก (-)" class="px-2 py-1 rounded-md text-slate-600 hover:text-sky-600 hover:bg-white transition"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                        <button onclick="resetChartZoom()" title="รีเซ็ตขนาดเดิม" class="px-2 py-1 rounded-md text-slate-600 hover:text-sky-600 hover:bg-white transition"><i class="fa-solid fa-arrows-rotate"></i></button>
+                    </div>
                 </div>
             </div>
 
             <!-- Chart Canvas with Responsive Mobile Height -->
             <div class="mt-4 relative h-[260px] sm:h-[340px]">
                 <canvas id="airChart"></canvas>
+            </div>
+
+            <!-- Zoom & Gesture Guide Hint -->
+            <div class="mt-2 flex items-center justify-between text-[11px] text-slate-400">
+                <span class="flex items-center gap-1">
+                    <i class="fa-solid fa-hand-pointer text-sky-500"></i>
+                    <span><b>การซูม:</b> ใช้ปุ่มซูมด้านบน, หมุนล้อเลื่อนเมาส์ (Scroll Wheel), หรือใช้นิ้วถ่างขยายบนหน้าจอมือถือ (Pinch Zoom)</span>
+                </span>
+                <button onclick="resetChartZoom()" class="text-sky-600 hover:underline hover:text-sky-800 hidden sm:inline-block">
+                    <i class="fa-solid fa-arrows-rotate mr-0.5"></i> รีเซ็ตมุมมองกราฟ
+                </button>
             </div>
 
             <!-- Standard Indicator Legend Bar (PCD Standard) -->
@@ -904,6 +924,23 @@
                             padding: 10,
                             boxPadding: 4,
                             usePointStyle: true
+                        },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                                modifierKey: null
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                    speed: 0.1
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x'
+                            }
                         }
                     },
                     scales: {
@@ -1326,6 +1363,18 @@
         function changeChartPoints(limit) {
             chartPointsLimit = (limit === 'all') ? 'all' : parseInt(limit, 10);
             updateChartData(allRecords);
+        }
+
+        function zoomChart(factor) {
+            if (chartInstance && typeof chartInstance.zoom === 'function') {
+                chartInstance.zoom(factor);
+            }
+        }
+
+        function resetChartZoom() {
+            if (chartInstance && typeof chartInstance.resetZoom === 'function') {
+                chartInstance.resetZoom();
+            }
         }
 
         // Helper to extract YYYY-MM-DD from record
