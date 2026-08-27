@@ -359,63 +359,103 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 text-xs">
                     <!-- Level 1: Very Good (Blue) -->
-                    <div class="p-3 rounded-xl bg-sky-50 border border-sky-200 hover:shadow-sm transition cursor-pointer" onclick="openPcdInfoModal()">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="inline-flex items-center gap-1.5 font-bold text-sky-900">
-                                <span class="w-3.5 h-3.5 rounded-full bg-[#00b0ff] border border-sky-400"></span>
-                                ฟ้า: ดีมาก
-                            </span>
-                            <span class="text-[10px] font-mono font-bold bg-sky-200/60 text-sky-800 px-1.5 py-0.5 rounded">0 - 15.0</span>
+                    <div class="p-3 rounded-xl bg-sky-50 border border-sky-200 hover:shadow-sm transition flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="inline-flex items-center gap-1.5 font-bold text-sky-900">
+                                    <span class="w-3.5 h-3.5 rounded-full bg-[#00b0ff] border border-sky-400"></span>
+                                    ฟ้า: ดีมาก
+                                </span>
+                                <span class="text-[10px] font-mono font-bold bg-sky-200/60 text-sky-800 px-1.5 py-0.5 rounded">0 - 15.0</span>
+                            </div>
+                            <p class="text-[11px] text-sky-700 leading-tight">คุณภาพอากาศดีมาก เหมาะสำหรับกิจกรรมกลางแจ้งทุกประเภท</p>
                         </div>
-                        <p class="text-[11px] text-sky-700 leading-tight">คุณภาพอากาศดีมาก เหมาะสำหรับกิจกรรมกลางแจ้งทุกประเภท</p>
+                        <div class="mt-2.5 pt-2 border-t border-sky-200/60 flex items-center justify-between text-[10px]">
+                            <span class="text-sky-600">เกณฑ์: 0 – 15.0 µg/m³</span>
+                            <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-sky-700 hover:text-sky-900 font-medium hover:underline flex items-center gap-1">
+                                <i class="fa-solid fa-link text-[9px]"></i> สคพ.3
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Level 2: Good (Green) -->
-                    <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 hover:shadow-sm transition cursor-pointer" onclick="openPcdInfoModal()">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="inline-flex items-center gap-1.5 font-bold text-emerald-900">
-                                <span class="w-3.5 h-3.5 rounded-full bg-[#00e676] border border-emerald-400"></span>
-                                เขียว: ดี
-                            </span>
-                            <span class="text-[10px] font-mono font-bold bg-emerald-200/60 text-emerald-800 px-1.5 py-0.5 rounded">15.1 - 25.0</span>
+                    <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 hover:shadow-sm transition flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="inline-flex items-center gap-1.5 font-bold text-emerald-900">
+                                    <span class="w-3.5 h-3.5 rounded-full bg-[#00e676] border border-emerald-400"></span>
+                                    เขียว: ดี
+                                </span>
+                                <span class="text-[10px] font-mono font-bold bg-emerald-200/60 text-emerald-800 px-1.5 py-0.5 rounded">15.1 - 25.0</span>
+                            </div>
+                            <p class="text-[11px] text-emerald-700 leading-tight">คุณภาพอากาศดี ทำกิจกรรมกลางแจ้งและท่องเที่ยวได้ตามปกติ</p>
                         </div>
-                        <p class="text-[11px] text-emerald-700 leading-tight">คุณภาพอากาศดี ทำกิจกรรมกลางแจ้งและท่องเที่ยวได้ตามปกติ</p>
+                        <div class="mt-2.5 pt-2 border-t border-emerald-200/60 flex items-center justify-between text-[10px]">
+                            <span class="text-emerald-600">เกณฑ์: 15.1 – 25.0 µg/m³</span>
+                            <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-emerald-700 hover:text-emerald-900 font-medium hover:underline flex items-center gap-1">
+                                <i class="fa-solid fa-link text-[9px]"></i> สคพ.3
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Level 3: Moderate (Yellow) -->
-                    <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 hover:shadow-sm transition cursor-pointer" onclick="openPcdInfoModal()">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="inline-flex items-center gap-1.5 font-bold text-amber-900">
-                                <span class="w-3.5 h-3.5 rounded-full bg-[#ffeb3b] border border-amber-400"></span>
-                                เหลือง: ปานกลาง
-                            </span>
-                            <span class="text-[10px] font-mono font-bold bg-amber-200/60 text-amber-900 px-1.5 py-0.5 rounded">25.1 - 37.5</span>
+                    <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 hover:shadow-sm transition flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="inline-flex items-center gap-1.5 font-bold text-amber-900">
+                                    <span class="w-3.5 h-3.5 rounded-full bg-[#ffeb3b] border border-amber-400"></span>
+                                    เหลือง: ปานกลาง
+                                </span>
+                                <span class="text-[10px] font-mono font-bold bg-amber-200/60 text-amber-900 px-1.5 py-0.5 rounded">25.1 - 37.5</span>
+                            </div>
+                            <p class="text-[11px] text-amber-800 leading-tight">กลุ่มเสี่ยงควรลดกิจกรรมกลางแจ้ง หากมีอาการไอ/ระคายเคือง</p>
                         </div>
-                        <p class="text-[11px] text-amber-800 leading-tight">กลุ่มเสี่ยงควรลดกิจกรรมกลางแจ้ง หากมีอาการไอ/ระคายเคือง</p>
+                        <div class="mt-2.5 pt-2 border-t border-amber-200/60 flex items-center justify-between text-[10px]">
+                            <span class="text-amber-700">เกณฑ์: 25.1 – 37.5 µg/m³</span>
+                            <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-amber-800 hover:text-amber-950 font-medium hover:underline flex items-center gap-1">
+                                <i class="fa-solid fa-link text-[9px]"></i> สคพ.3
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Level 4: Unhealthy for Sensitive (Orange) -->
-                    <div class="p-3 rounded-xl bg-orange-50 border border-orange-200 hover:shadow-sm transition cursor-pointer" onclick="openPcdInfoModal()">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="inline-flex items-center gap-1.5 font-bold text-orange-900">
-                                <span class="w-3.5 h-3.5 rounded-full bg-[#ff9100] border border-orange-400"></span>
-                                ส้ม: เริ่มมีผลกระทบ
-                            </span>
-                            <span class="text-[10px] font-mono font-bold bg-orange-200/60 text-orange-900 px-1.5 py-0.5 rounded">37.6 - 75.0</span>
+                    <div class="p-3 rounded-xl bg-orange-50 border border-orange-200 hover:shadow-sm transition flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="inline-flex items-center gap-1.5 font-bold text-orange-900">
+                                    <span class="w-3.5 h-3.5 rounded-full bg-[#ff9100] border border-orange-400"></span>
+                                    ส้ม: เริ่มมีผลกระทบ
+                                </span>
+                                <span class="text-[10px] font-mono font-bold bg-orange-200/60 text-orange-900 px-1.5 py-0.5 rounded">37.6 - 75.0</span>
+                            </div>
+                            <p class="text-[11px] text-orange-800 leading-tight">ควรลดเวลากลางแจ้ง สวมหน้ากากป้องกันฝุ่นเมื่อออกนอกอาคาร</p>
                         </div>
-                        <p class="text-[11px] text-orange-800 leading-tight">ควรลดเวลากลางแจ้ง สวมหน้ากากป้องกันฝุ่นเมื่อออกนอกอาคาร</p>
+                        <div class="mt-2.5 pt-2 border-t border-orange-200/60 flex items-center justify-between text-[10px]">
+                            <span class="text-orange-700">เกณฑ์: 37.6 – 75.0 µg/m³</span>
+                            <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-orange-800 hover:text-orange-950 font-medium hover:underline flex items-center gap-1">
+                                <i class="fa-solid fa-link text-[9px]"></i> สคพ.3
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Level 5: Hazardous (Red) -->
-                    <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 hover:shadow-sm transition cursor-pointer" onclick="openPcdInfoModal()">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="inline-flex items-center gap-1.5 font-bold text-rose-900">
-                                <span class="w-3.5 h-3.5 rounded-full bg-[#ff1744] border border-rose-400"></span>
-                                แดง: มีผลกระทบ
-                            </span>
-                            <span class="text-[10px] font-mono font-bold bg-rose-200/60 text-rose-900 px-1.5 py-0.5 rounded">&gt; 75.0</span>
+                    <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 hover:shadow-sm transition flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="inline-flex items-center gap-1.5 font-bold text-rose-900">
+                                    <span class="w-3.5 h-3.5 rounded-full bg-[#ff1744] border border-rose-400"></span>
+                                    แดง: มีผลกระทบ
+                                </span>
+                                <span class="text-[10px] font-mono font-bold bg-rose-200/60 text-rose-900 px-1.5 py-0.5 rounded">&gt; 75.0</span>
+                            </div>
+                            <p class="text-[11px] text-rose-800 leading-tight">ทุกคนควรเลี่ยงกิจกรรมกลางแจ้ง สวมหน้ากาก N95 ทันที</p>
                         </div>
-                        <p class="text-[11px] text-rose-800 leading-tight">ทุกคนควรเลี่ยงกิจกรรมกลางแจ้ง สวมหน้ากาก N95 ทันที</p>
+                        <div class="mt-2.5 pt-2 border-t border-rose-200/60 flex items-center justify-between text-[10px]">
+                            <span class="text-rose-700">เกณฑ์: 75.1+ µg/m³</span>
+                            <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-rose-800 hover:text-rose-950 font-medium hover:underline flex items-center gap-1">
+                                <i class="fa-solid fa-link text-[9px]"></i> สคพ.3
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -597,7 +637,7 @@
                 </button>
             </div>
 
-            <!-- PCD 5 Color Table / Cards -->
+            <!-- PCD 5 Color Table / Cards with Explicit Source References -->
             <div class="space-y-2.5 text-xs">
                 <!-- Level 1 -->
                 <div class="p-3 rounded-xl bg-sky-50 border border-sky-200">
@@ -611,6 +651,12 @@
                     <div class="text-slate-700 space-y-0.5 pl-5">
                         <p><strong>👥 ประชาชนทั่วไป:</strong> คุณภาพอากาศดีมาก สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</p>
                         <p><strong>⚠️ ผู้ที่ต้องดูแลสุขภาพเป็นพิเศษ:</strong> สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</p>
+                    </div>
+                    <div class="mt-2 pt-1.5 border-t border-sky-200/60 pl-5 flex items-center justify-between text-[11px]">
+                        <span class="text-slate-500">แหล่งอ้างอิง: สำนักงานสิ่งแวดล้อมและควบคุมมลพิษที่ 3 (พิษณุโลก)</span>
+                        <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:text-sky-800 font-medium hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> ดูประกาศต้นฉบับ
+                        </a>
                     </div>
                 </div>
 
@@ -627,6 +673,12 @@
                         <p><strong>👥 ประชาชนทั่วไป:</strong> คุณภาพอากาศดี สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</p>
                         <p><strong>⚠️ ผู้ที่ต้องดูแลสุขภาพเป็นพิเศษ:</strong> สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</p>
                     </div>
+                    <div class="mt-2 pt-1.5 border-t border-emerald-200/60 pl-5 flex items-center justify-between text-[11px]">
+                        <span class="text-slate-500">แหล่งอ้างอิง: สำนักงานสิ่งแวดล้อมและควบคุมมลพิษที่ 3 (พิษณุโลก)</span>
+                        <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-emerald-600 hover:text-emerald-800 font-medium hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> ดูประกาศต้นฉบับ
+                        </a>
+                    </div>
                 </div>
 
                 <!-- Level 3 -->
@@ -641,6 +693,12 @@
                     <div class="text-slate-700 space-y-0.5 pl-5">
                         <p><strong>👥 ประชาชนทั่วไป:</strong> สามารถทำกิจกรรมกลางแจ้งได้ตามปกติ</p>
                         <p><strong>⚠️ ผู้ที่ต้องดูแลสุขภาพเป็นพิเศษ:</strong> หากมีอาการเบื้องต้น เช่น ไอ หายใจลำบาก ระคายเคืองตา ควรลดระยะเวลาการทำกิจกรรมกลางแจ้ง</p>
+                    </div>
+                    <div class="mt-2 pt-1.5 border-t border-amber-200/60 pl-5 flex items-center justify-between text-[11px]">
+                        <span class="text-slate-500">แหล่งอ้างอิง: สำนักงานสิ่งแวดล้อมและควบคุมมลพิษที่ 3 (พิษณุโลก)</span>
+                        <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-amber-700 hover:text-amber-900 font-medium hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> ดูประกาศต้นฉบับ
+                        </a>
                     </div>
                 </div>
 
@@ -657,6 +715,12 @@
                         <p><strong>👥 ประชาชนทั่วไป:</strong> ควรเฝ้าระวังสุขภาพ ถ้ามีอาการเบื้องต้น เช่น ไอ หายใจลำบาก ระคายเคืองตา ควรลดระยะเวลากิจกรรมกลางแจ้ง หรือสวมหน้ากากป้องกันฝุ่น</p>
                         <p><strong>⚠️ ผู้ที่ต้องดูแลสุขภาพเป็นพิเศษ:</strong> ควรลดระยะเวลาการทำกิจกรรมกลางแจ้ง สวมหน้ากากป้องกันฝุ่น หากมีอาการผิดปกติ (แน่นหน้าอก, หายใจเหนื่อย) ให้รีบปรึกษาแพทย์</p>
                     </div>
+                    <div class="mt-2 pt-1.5 border-t border-orange-200/60 pl-5 flex items-center justify-between text-[11px]">
+                        <span class="text-slate-500">แหล่งอ้างอิง: สำนักงานสิ่งแวดล้อมและควบคุมมลพิษที่ 3 (พิษณุโลก)</span>
+                        <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-orange-700 hover:text-orange-900 font-medium hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> ดูประกาศต้นฉบับ
+                        </a>
+                    </div>
                 </div>
 
                 <!-- Level 5 -->
@@ -671,6 +735,12 @@
                     <div class="text-slate-700 space-y-0.5 pl-5">
                         <p><strong>👥 ประชาชนทั่วไป:</strong> ทุกคนควรหลีกเลี่ยงกิจกรรมกลางแจ้ง หลีกเลี่ยงพื้นที่ที่มีมลพิษทางอากาศสูง สวมหน้ากาก N95 และอยู่ภายในอาคารที่ปิดมิดชิด</p>
                         <p><strong>⚠️ ผู้ที่ต้องดูแลสุขภาพเป็นพิเศษ:</strong> หลีกเลี่ยงกิจกรรมกลางแจ้งทุกชนิด สวมหน้ากาก N95 หากมีอาการทางสุขภาพควรปรึกษาแพทย์ทันที</p>
+                    </div>
+                    <div class="mt-2 pt-1.5 border-t border-rose-200/60 pl-5 flex items-center justify-between text-[11px]">
+                        <span class="text-slate-500">แหล่งอ้างอิง: สำนักงานสิ่งแวดล้อมและควบคุมมลพิษที่ 3 (พิษณุโลก)</span>
+                        <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-rose-700 hover:text-rose-900 font-medium hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> ดูประกาศต้นฉบับ
+                        </a>
                     </div>
                 </div>
             </div>
