@@ -645,8 +645,8 @@
                         <input type="password" id="setting-tg-token" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="8974699444:AAHoVIXSNMiBa9h-PB1iyrQdlbBtPyOUJ2s">
                     </div>
                     <div>
-                        <label class="block text-slate-700 font-medium mb-1">Telegram Chat ID</label>
-                        <input type="text" id="setting-tg-chatid" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="7903084332">
+                        <label class="block text-slate-700 font-medium mb-1">Telegram Chat ID (กลุ่มหรือส่วนตัว)</label>
+                        <input type="text" id="setting-tg-chatid" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="-1004468680301">
                     </div>
                     <div>
                         <label class="block text-slate-700 font-medium mb-1">เกณฑ์ค่าฝุ่น PM 2.5 ที่จะส่งแจ้งเตือน</label>
@@ -828,10 +828,10 @@
             refreshInterval: 5000,
             dataLimit: 100,
             telegramToken: "8974699444:AAHoVIXSNMiBa9h-PB1iyrQdlbBtPyOUJ2s",
-            telegramChatId: "7903084332",
+            telegramChatId: "-1004468680301",
             telegramEnabled: true,
             telegramThreshold: 37.5,
-            version: "2.4"
+            version: "2.5"
         };
 
         // App State
@@ -856,7 +856,14 @@
                 try {
                     const parsed = JSON.parse(saved);
                     if (parsed.version !== DEFAULT_CONFIG.version) {
-                        config = { ...DEFAULT_CONFIG, ...parsed, telegramToken: DEFAULT_CONFIG.telegramToken, telegramChatId: DEFAULT_CONFIG.telegramChatId, telegramEnabled: true, version: DEFAULT_CONFIG.version };
+                        config = { 
+                            ...DEFAULT_CONFIG, 
+                            ...parsed, 
+                            telegramToken: DEFAULT_CONFIG.telegramToken, 
+                            telegramChatId: DEFAULT_CONFIG.telegramChatId, 
+                            telegramEnabled: true, 
+                            version: DEFAULT_CONFIG.version 
+                        };
                         saveConfigToStorage();
                     } else {
                         config = { ...DEFAULT_CONFIG, ...parsed };
@@ -1994,9 +2001,20 @@
             document.getElementById('setting-tg-threshold').value = String(DEFAULT_CONFIG.telegramThreshold);
         }
 
+        function formatTelegramChatId(chatId) {
+            if (!chatId) return '';
+            let clean = String(chatId).trim();
+            // If user enters 1004468680301 (without leading minus for supergroup), auto prepend '-'
+            if (clean.startsWith('100') && clean.length >= 12 && !clean.startsWith('-')) {
+                clean = '-' + clean;
+            }
+            return clean;
+        }
+
         async function triggerTelegramAlert(pm25, gas, fullFormatted, deviceId, force = false) {
             const token = config.telegramToken || DEFAULT_CONFIG.telegramToken;
-            const chatId = config.telegramChatId || DEFAULT_CONFIG.telegramChatId;
+            const rawChatId = config.telegramChatId || DEFAULT_CONFIG.telegramChatId;
+            const chatId = formatTelegramChatId(rawChatId);
             const enabled = (config.telegramEnabled !== undefined) ? config.telegramEnabled : true;
 
             if (!enabled || !token || !chatId) {
@@ -2059,7 +2077,8 @@
 
         async function sendCurrentStatusToTelegram() {
             const token = document.getElementById('setting-tg-token')?.value.trim() || config.telegramToken || DEFAULT_CONFIG.telegramToken;
-            const chatId = document.getElementById('setting-tg-chatid')?.value.trim() || config.telegramChatId || DEFAULT_CONFIG.telegramChatId;
+            const rawChatId = document.getElementById('setting-tg-chatid')?.value.trim() || config.telegramChatId || DEFAULT_CONFIG.telegramChatId;
+            const chatId = formatTelegramChatId(rawChatId);
             const resultBox = document.getElementById('settings-test-result');
 
             if (!token || !chatId) {
@@ -2102,7 +2121,8 @@
 
         async function testTelegramAlert() {
             const token = document.getElementById('setting-tg-token')?.value.trim() || config.telegramToken || DEFAULT_CONFIG.telegramToken;
-            const chatId = document.getElementById('setting-tg-chatid')?.value.trim() || config.telegramChatId || DEFAULT_CONFIG.telegramChatId;
+            const rawChatId = document.getElementById('setting-tg-chatid')?.value.trim() || config.telegramChatId || DEFAULT_CONFIG.telegramChatId;
+            const chatId = formatTelegramChatId(rawChatId);
             const resultBox = document.getElementById('settings-test-result');
 
             if (!token || !chatId) {
@@ -2190,7 +2210,8 @@
             config.tableId = document.getElementById('setting-table-id').value.trim() || DEFAULT_CONFIG.tableId;
             config.token = document.getElementById('setting-api-token').value.trim() || DEFAULT_CONFIG.token;
             config.telegramToken = document.getElementById('setting-tg-token').value.trim() || DEFAULT_CONFIG.telegramToken;
-            config.telegramChatId = document.getElementById('setting-tg-chatid').value.trim() || DEFAULT_CONFIG.telegramChatId;
+            const rawChatId = document.getElementById('setting-tg-chatid').value.trim() || DEFAULT_CONFIG.telegramChatId;
+            config.telegramChatId = formatTelegramChatId(rawChatId);
             config.telegramEnabled = document.getElementById('setting-tg-enabled').checked;
             config.telegramThreshold = parseFloat(document.getElementById('setting-tg-threshold').value) || 0;
             
