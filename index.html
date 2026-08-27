@@ -487,16 +487,16 @@
                     <label class="block text-slate-600 font-medium mb-1">ค้นหาข้อความ / วันที่</label>
                     <div class="relative">
                         <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400"></i>
-                        <input type="text" id="search-input" onkeyup="filterTableData()" placeholder="พิมพ์ค้นหา..." class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <input type="text" id="search-input" onkeyup="filterTableData(true)" placeholder="พิมพ์ค้นหา..." class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
                     </div>
                 </div>
                 <div>
                     <label class="block text-slate-600 font-medium mb-1">ตั้งแต่วันที่</label>
-                    <input type="date" id="filter-start-date" onchange="filterTableData()" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    <input type="date" id="filter-start-date" onchange="filterTableData(true)" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
                 <div>
                     <label class="block text-slate-600 font-medium mb-1">ถึงวันที่</label>
-                    <input type="date" id="filter-end-date" onchange="filterTableData()" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    <input type="date" id="filter-end-date" onchange="filterTableData(true)" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
                 <div class="flex items-end">
                     <button onclick="resetFilters()" class="w-full py-1.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition">
@@ -1235,8 +1235,8 @@
             // 4. Update Chart
             updateChartData(records);
 
-            // 5. Update Table
-            filterTableData();
+            // 5. Update Table (Preserve current table page on auto-refresh)
+            filterTableData(false);
         }
 
         // Update Chart
@@ -1294,7 +1294,7 @@
         }
 
         // Filter Table Data
-        function filterTableData() {
+        function filterTableData(resetPage = false) {
             const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
             const startDate = document.getElementById('filter-start-date')?.value;
             const endDate = document.getElementById('filter-end-date')?.value;
@@ -1330,7 +1330,15 @@
                 return true;
             });
 
-            currentPage = 1;
+            const totalPages = Math.ceil(filteredRecords.length / rowsPerPage) || 1;
+            if (resetPage) {
+                currentPage = 1;
+            } else if (currentPage > totalPages) {
+                currentPage = totalPages;
+            } else if (currentPage < 1) {
+                currentPage = 1;
+            }
+
             renderTablePage();
         }
 
@@ -1412,7 +1420,7 @@
             document.getElementById('search-input').value = '';
             document.getElementById('filter-start-date').value = '';
             document.getElementById('filter-end-date').value = '';
-            filterTableData();
+            filterTableData(true);
         }
 
         // Export data to CSV file
