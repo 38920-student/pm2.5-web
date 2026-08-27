@@ -1127,6 +1127,32 @@
             }
         }
 
+        // Helper to convert NocoDB raw item to dashboard record
+        function mapRawItemToRecord(item) {
+            const pm25 = parseFloat(item['PM 2.5 Value'] ?? item.pm25 ?? item['PM2.5'] ?? 0);
+            const gas = parseFloat(item['Gas Value'] ?? item.gas ?? item['Gas'] ?? 0);
+            const gasType = item['Gas Type'] ?? item.gas_type ?? 'co';
+            const deviceId = item['Device ID'] ?? item.device_id ?? 'a1';
+            const rawTime = item.Timestamp || item.CreatedAt || item.created_at || '';
+            const dt = formatDateTime(rawTime);
+            const aqi = getAQIStatus(pm25);
+
+            return {
+                id: item.Id,
+                deviceId,
+                pm25: isNaN(pm25) ? 0 : pm25,
+                gas: isNaN(gas) ? 0 : gas,
+                gasType,
+                rawTime,
+                timeFormatted: dt.timeStr,
+                dateFormatted: dt.dateStr,
+                fullFormatted: dt.full,
+                aqiLabel: aqi.label,
+                aqiShortLabel: aqi.shortLabel,
+                aqiColorName: aqi.colorName
+            };
+        }
+
         // Fetch Data directly from NocoDB API
         async function fetchAirData(isManual = false) {
             // If in history search mode and this is automatic periodic background refresh, do not overwrite search results
@@ -1138,50 +1164,37 @@
             const refreshIcon = document.getElementById('refresh-icon');
             if (isManual && refreshIcon) refreshIcon.classList.add('fa-spin');
 
-            const url = `${config.baseUrl}/api/v2/tables/${config.tableId}/records?limit=${config.dataLimit}&sort=-Id`;
-            
             try {
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'accept': 'application/json',
-                        'xc-token': config.token,
-                        'Content-Type': 'application/json'
+                // If initial page load or manual refresh, load the complete database history (all 2,800+ records)
+                if (isManual || allRecords.length === 0) {
+                    const rawList = await fetchAllDatabaseRecords();
+                    if (rawList && rawList.length > 0) {
+                        allRecords = rawList.map(mapRawItemToRecord);
                     }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+                } else {
+                    // Periodic background auto-refresh: fetch latest 10 records to check for new entries
+                    const url = `${config.baseUrl}/api/v2/tables/${config.tableId}/records?limit=10&sort=-Id`;
+                    const res = await fetch(url, {
+                        headers: {
+                            'accept': 'application/json',
+                            'xc-token': config.token
+                        }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const latestList = data.list || [];
+                        if (latestList.length > 0) {
+                            const newestId = latestList[0].Id;
+                            if (allRecords.length > 0 && newestId > allRecords[0].id) {
+                                // Prepend new records that are not in allRecords yet
+                                const newItems = latestList
+                                    .filter(item => item.Id > allRecords[0].id)
+                                    .map(mapRawItemToRecord);
+                                allRecords = newItems.concat(allRecords);
+                            }
+                        }
+                    }
                 }
-
-                const data = await response.json();
-                const rawList = data.list || [];
-
-                // Parse records to standardized objects
-                allRecords = rawList.map(item => {
-                    const pm25 = parseFloat(item['PM 2.5 Value'] ?? item.pm25 ?? item['PM2.5'] ?? 0);
-                    const gas = parseFloat(item['Gas Value'] ?? item.gas ?? item['Gas'] ?? 0);
-                    const gasType = item['Gas Type'] ?? item.gas_type ?? 'co';
-                    const deviceId = item['Device ID'] ?? item.device_id ?? 'a1';
-                    const rawTime = item.Timestamp || item.CreatedAt || item.created_at || '';
-                    const dt = formatDateTime(rawTime);
-                    const aqi = getAQIStatus(pm25);
-
-                    return {
-                        id: item.Id,
-                        deviceId,
-                        pm25: isNaN(pm25) ? 0 : pm25,
-                        gas: isNaN(gas) ? 0 : gas,
-                        gasType,
-                        rawTime,
-                        timeFormatted: dt.timeStr,
-                        dateFormatted: dt.dateStr,
-                        fullFormatted: dt.full,
-                        aqiLabel: aqi.label,
-                        aqiShortLabel: aqi.shortLabel,
-                        aqiColorName: aqi.colorName
-                    };
-                });
 
                 // Check PM 2.5 alert threshold (> 75)
                 if (allRecords.length > 0 && allRecords[0].pm25 > 75.0) {
@@ -1189,7 +1202,7 @@
                 }
 
                 // Update UI elements
-                updateDashboardUI(allRecords, data.pageInfo?.totalRows || allRecords.length);
+                updateDashboardUI(allRecords, allRecords.length);
                 
                 // Update connection status badge
                 setConnectionStatus(true, 'เชื่อมต่อข้อมูลสำเร็จ');
@@ -1524,30 +1537,7 @@
                 if (startDateStr || endDateStr) {
                     const rawList = await fetchAllDatabaseRecords();
                     if (rawList && rawList.length > 0) {
-                        allRecords = rawList.map(item => {
-                            const pm25 = parseFloat(item['PM 2.5 Value'] ?? item.pm25 ?? item['PM2.5'] ?? 0);
-                            const gas = parseFloat(item['Gas Value'] ?? item.gas ?? item['Gas'] ?? 0);
-                            const gasType = item['Gas Type'] ?? item.gas_type ?? 'co';
-                            const deviceId = item['Device ID'] ?? item.device_id ?? 'a1';
-                            const rawTime = item.Timestamp || item.CreatedAt || item.created_at || '';
-                            const dt = formatDateTime(rawTime);
-                            const aqi = getAQIStatus(pm25);
-
-                            return {
-                                id: item.Id,
-                                deviceId,
-                                pm25: isNaN(pm25) ? 0 : pm25,
-                                gas: isNaN(gas) ? 0 : gas,
-                                gasType,
-                                rawTime,
-                                timeFormatted: dt.timeStr,
-                                dateFormatted: dt.dateStr,
-                                fullFormatted: dt.full,
-                                aqiLabel: aqi.label,
-                                aqiShortLabel: aqi.shortLabel,
-                                aqiColorName: aqi.colorName
-                            };
-                        });
+                        allRecords = rawList.map(mapRawItemToRecord);
                     }
                 }
 
