@@ -334,10 +334,16 @@
                         <button onclick="setChartSeries('gas')" id="btn-chart-gas" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">ก๊าซ</button>
                     </div>
 
-                    <!-- Date Selector for Daily Chart -->
+                    <!-- Quick Date Dropdown -->
                     <select id="chart-date-select" onchange="changeChartDate(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
                         <!-- Populated dynamically from available dates in DB -->
                     </select>
+
+                    <!-- Calendar Date Picker -->
+                    <div class="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs shadow-sm hover:bg-slate-50">
+                        <i class="fa-regular fa-calendar text-sky-600"></i>
+                        <input type="date" id="chart-date-picker" onchange="changeChartDate(this.value)" title="เลือกดูตามปฏิทิน" class="bg-transparent text-slate-800 font-medium focus:outline-none cursor-pointer text-xs">
+                    </div>
                 </div>
             </div>
 
@@ -1313,7 +1319,8 @@
         // Dynamically populate the date dropdown on Trends card
         function populateChartDateOptions() {
             const selectElem = document.getElementById('chart-date-select');
-            if (!selectElem || !allRecords || allRecords.length === 0) return;
+            const pickerElem = document.getElementById('chart-date-picker');
+            if (!allRecords || allRecords.length === 0) return;
 
             // Extract distinct dates from allRecords
             const dateMap = new Map();
@@ -1334,21 +1341,39 @@
                 selectedChartDate = sortedDates[0];
             }
 
-            const todayKey = new Date().toISOString().slice(0, 10);
-            let html = '';
-            sortedDates.forEach(dateKey => {
-                const label = dateMap.get(dateKey);
-                const isToday = (dateKey === todayKey || dateKey === sortedDates[0]);
-                const displayLabel = isToday ? `📅 วันนี้ (${label})` : `📅 ${label}`;
-                const isSelected = (dateKey === selectedChartDate) ? 'selected' : '';
-                html += `<option value="${dateKey}" ${isSelected}>${displayLabel}</option>`;
-            });
+            if (pickerElem && !pickerElem.value) {
+                pickerElem.value = selectedChartDate;
+            }
 
-            selectElem.innerHTML = html;
+            if (selectElem) {
+                const todayKey = new Date().toISOString().slice(0, 10);
+                let html = '';
+                let hasSelectedInDropdown = false;
+                sortedDates.forEach(dateKey => {
+                    const label = dateMap.get(dateKey);
+                    const isToday = (dateKey === todayKey || dateKey === sortedDates[0]);
+                    const displayLabel = isToday ? `📅 วันนี้ (${label})` : `📅 ${label}`;
+                    const isSelected = (dateKey === selectedChartDate);
+                    if (isSelected) hasSelectedInDropdown = true;
+                    html += `<option value="${dateKey}" ${isSelected ? 'selected' : ''}>${displayLabel}</option>`;
+                });
+
+                // If user selected a custom date not in list, prepend it to dropdown
+                if (!hasSelectedInDropdown && selectedChartDate) {
+                    const customDateObj = parseInputDate(selectedChartDate, false);
+                    const customLabel = customDateObj ? customDateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : selectedChartDate;
+                    html = `<option value="${selectedChartDate}" selected>📅 ${customLabel} (เลือกจากปฏิทิน)</option>` + html;
+                }
+
+                selectElem.innerHTML = html;
+            }
         }
 
         function changeChartDate(dateStr) {
+            if (!dateStr) return;
             selectedChartDate = dateStr;
+            const picker = document.getElementById('chart-date-picker');
+            if (picker) picker.value = dateStr;
             updateChartData(allRecords);
         }
 
