@@ -77,12 +77,26 @@
         ::-webkit-scrollbar-track {
             background: #f1f5f9;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
+        /* Flatpickr Calendar Styling */
+        .flatpickr-calendar {
+            font-family: 'Prompt', 'Sarabun', sans-serif !important;
+            border-radius: 1rem !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+            border: 1px solid #e2e8f0 !important;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+        .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+            background: #0284c7 !important;
+            border-color: #0284c7 !important;
+        }
+        .flatpickr-day:hover {
+            background: #e0f2fe !important;
+        }
+        .flatpickr-current-month {
+            font-size: 105% !important;
+            padding-top: 6px !important;
+        }
+        .flatpickr-current-month .cur-month {
+            font-weight: 700 !important;
         }
     </style>
 </head>
@@ -1021,19 +1035,57 @@
             });
         }
 
-        // Parse "YYYY-MM-DD" from date picker into local Date
+        // Parse "YYYY-MM-DD" or Thai Buddhist date strings into local Date
         function parseInputDate(dateStr, isEndOfDay = false) {
             if (!dateStr) return null;
-            const parts = dateStr.split('-');
-            if (parts.length !== 3) return null;
-            const y = parseInt(parts[0], 10);
-            const m = parseInt(parts[1], 10) - 1;
-            const d = parseInt(parts[2], 10);
-            if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
-            if (isEndOfDay) {
-                return new Date(y, m, d, 23, 59, 59, 999);
+            if (dateStr instanceof Date) {
+                return isEndOfDay 
+                    ? new Date(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate(), 23, 59, 59, 999) 
+                    : new Date(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate(), 0, 0, 0, 0);
             }
-            return new Date(y, m, d, 0, 0, 0, 0);
+            const str = String(dateStr).trim();
+            // 1. Check YYYY-MM-DD
+            if (str.includes('-')) {
+                const parts = str.split('-');
+                if (parts.length === 3) {
+                    let y = parseInt(parts[0], 10);
+                    const m = parseInt(parts[1], 10) - 1;
+                    const d = parseInt(parts[2], 10);
+                    if (y > 2400) y -= 543; // convert Thai Buddhist year if present
+                    if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                        return isEndOfDay ? new Date(y, m, d, 23, 59, 59, 999) : new Date(y, m, d, 0, 0, 0, 0);
+                    }
+                }
+            }
+            // 2. Check "24 ส.ค. 2569"
+            if (str.includes(' ')) {
+                const parts = str.split(/\s+/);
+                if (parts.length === 3) {
+                    const d = parseInt(parts[0], 10);
+                    const monthNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                    const monthIndex = monthNames.indexOf(parts[1]);
+                    let y = parseInt(parts[2], 10);
+                    if (y > 2400) y -= 543;
+                    if (!isNaN(d) && monthIndex !== -1 && !isNaN(y)) {
+                        return isEndOfDay ? new Date(y, monthIndex, d, 23, 59, 59, 999) : new Date(y, monthIndex, d, 0, 0, 0, 0);
+                    }
+                }
+            }
+            // 3. Check "24/08/2569" or "24/08/2026"
+            if (str.includes('/')) {
+                const parts = str.split('/');
+                if (parts.length === 3) {
+                    const d = parseInt(parts[0], 10);
+                    const m = parseInt(parts[1], 10) - 1;
+                    let y = parseInt(parts[2], 10);
+                    if (y > 2400) y -= 543;
+                    if (!isNaN(d) && !isNaN(m) && !isNaN(y)) {
+                        return isEndOfDay ? new Date(y, m, d, 23, 59, 59, 999) : new Date(y, m, d, 0, 0, 0, 0);
+                    }
+                }
+            }
+            const fallback = new Date(str);
+            return isNaN(fallback.getTime()) ? null : fallback;
         }
 
         // Get safe Date object from database timestamp
@@ -1503,6 +1555,25 @@
             return `${d} ${m} ${thaiYear}`;
         }
 
+        function formatCustomFlatpickr(date, formatStr) {
+            if (!date) return '';
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+
+            if (formatStr === 'Y-m-d' || formatStr === 'Y-m-d H:i:S' || formatStr === 'Z') {
+                return `${y}-${m}-${d}`;
+            }
+            return formatThaiBuddhistDate(date);
+        }
+
+        function updateFlatpickrThaiYearHeader(instance) {
+            if (!instance || !instance.currentYearElement) return;
+            const curYr = instance.currentYear;
+            const thaiYr = curYr < 2400 ? curYr + 543 : curYr;
+            instance.currentYearElement.value = thaiYr;
+        }
+
         function initThaiDatePickers() {
             if (typeof flatpickr === 'undefined') return;
 
@@ -1526,17 +1597,29 @@
                     dateFormat: "Y-m-d",
                     altInput: true,
                     altFormat: "j M Y",
-                    formatDate: function(date) {
-                        return formatThaiBuddhistDate(date);
-                    },
+                    formatDate: formatCustomFlatpickr,
                     onReady: function(selectedDates, dateStr, instance) {
                         if (instance.altInput) {
                             instance.altInput.placeholder = "เลือกวันที่ (พ.ศ.)";
                             instance.altInput.className = 'bg-transparent text-slate-800 font-medium focus:outline-none cursor-pointer text-xs w-24 sm:w-28';
                         }
                     },
-                    onChange: function(selectedDates, dateStr) {
-                        changeChartDate(dateStr);
+                    onOpen: function(selectedDates, dateStr, instance) {
+                        updateFlatpickrThaiYearHeader(instance);
+                    },
+                    onMonthChange: function(selectedDates, dateStr, instance) {
+                        updateFlatpickrThaiYearHeader(instance);
+                    },
+                    onYearChange: function(selectedDates, dateStr, instance) {
+                        updateFlatpickrThaiYearHeader(instance);
+                    },
+                    onChange: function(selectedDates) {
+                        if (selectedDates && selectedDates.length > 0) {
+                            const y = selectedDates[0].getFullYear();
+                            const m = String(selectedDates[0].getMonth() + 1).padStart(2, '0');
+                            const d = String(selectedDates[0].getDate()).padStart(2, '0');
+                            changeChartDate(`${y}-${m}-${d}`);
+                        }
                     }
                 });
             }
@@ -1549,14 +1632,21 @@
                     dateFormat: "Y-m-d",
                     altInput: true,
                     altFormat: "j M Y",
-                    formatDate: function(date) {
-                        return formatThaiBuddhistDate(date);
-                    },
+                    formatDate: formatCustomFlatpickr,
                     onReady: function(selectedDates, dateStr, instance) {
                         if (instance.altInput) {
                             instance.altInput.placeholder = "เลือกวันที่เริ่ม (พ.ศ.)";
                             instance.altInput.className = 'w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer';
                         }
+                    },
+                    onOpen: function(selectedDates, dateStr, instance) {
+                        updateFlatpickrThaiYearHeader(instance);
+                    },
+                    onMonthChange: function(selectedDates, dateStr, instance) {
+                        updateFlatpickrThaiYearHeader(instance);
+                    },
+                    onYearChange: function(selectedDates, dateStr, instance) {
+                        updateFlatpickrThaiYearHeader(instance);
                     },
                     onChange: function() {
                         performHistorySearch();
@@ -1572,14 +1662,21 @@
                     dateFormat: "Y-m-d",
                     altInput: true,
                     altFormat: "j M Y",
-                    formatDate: function(date) {
-                        return formatThaiBuddhistDate(date);
-                    },
+                    formatDate: formatCustomFlatpickr,
                     onReady: function(selectedDates, dateStr, instance) {
                         if (instance.altInput) {
                             instance.altInput.placeholder = "เลือกวันที่สิ้นสุด (พ.ศ.)";
                             instance.altInput.className = 'w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer';
                         }
+                    },
+                    onOpen: function(selectedDates, dateStr, instance) {
+                        updateFlatpickrThaiYearHeader(instance);
+                    },
+                    onMonthChange: function(selectedDates, dateStr, instance) {
+                        updateFlatpickrThaiYearHeader(instance);
+                    },
+                    onYearChange: function(selectedDates, dateStr, instance) {
+                        updateFlatpickrThaiYearHeader(instance);
                     },
                     onChange: function() {
                         performHistorySearch();
@@ -1596,16 +1693,39 @@
                 selectedChartDate = getRecordDateString(allRecords[0]);
             }
 
-            if (fpChartDatePicker && !fpChartDatePicker.selectedDates.length) {
-                fpChartDatePicker.setDate(selectedChartDate, false);
+            if (fpChartDatePicker) {
+                const parts = selectedChartDate.split('-');
+                if (parts.length === 3) {
+                    const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    fpChartDatePicker.setDate(dateObj, false);
+                }
             }
         }
 
         function changeChartDate(dateStr) {
             if (!dateStr) return;
+            // Ensure format is YYYY-MM-DD
+            if (dateStr.includes(' ')) {
+                const parts = dateStr.trim().split(/\s+/);
+                if (parts.length === 3) {
+                    const day = String(parts[0]).padStart(2, '0');
+                    const monthNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                    const mIdx = monthNames.indexOf(parts[1]);
+                    let yr = parseInt(parts[2], 10);
+                    if (yr > 2400) yr -= 543;
+                    if (mIdx !== -1) {
+                        dateStr = `${yr}-${String(mIdx + 1).padStart(2, '0')}-${day}`;
+                    }
+                }
+            }
+
             selectedChartDate = dateStr;
             if (fpChartDatePicker) {
-                fpChartDatePicker.setDate(dateStr, false);
+                const parts = selectedChartDate.split('-');
+                if (parts.length === 3) {
+                    const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    fpChartDatePicker.setDate(dateObj, false);
+                }
             }
             updateChartData(allRecords);
         }
