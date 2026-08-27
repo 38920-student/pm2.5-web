@@ -332,11 +332,13 @@
                     </div>
 
                     <!-- Limit Selector -->
-                    <select id="data-limit-select" onchange="changeDataLimit(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
-                        <option value="15">15 รายการล่าสุด</option>
-                        <option value="25" selected>25 รายการล่าสุด</option>
-                        <option value="50">50 รายการล่าสุด</option>
-                        <option value="100">100 รายการล่าสุด</option>
+                    <select onchange="changeDataLimit(this.value)" class="data-limit-select text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
+                        <option value="25">25 รายการ</option>
+                        <option value="50">50 รายการ</option>
+                        <option value="100" selected>100 รายการ</option>
+                        <option value="250">250 รายการ</option>
+                        <option value="500">500 รายการ</option>
+                        <option value="1000">1,000 รายการ</option>
                     </select>
                 </div>
             </div>
@@ -482,12 +484,12 @@
             </div>
 
             <!-- Filter Controls -->
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs">
                 <div>
-                    <label class="block text-slate-600 font-medium mb-1">ค้นหาข้อความ / วันที่</label>
+                    <label class="block text-slate-600 font-medium mb-1">ค้นหา (ID / ค่าฝุ่น / สถานะ)</label>
                     <div class="relative">
                         <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400"></i>
-                        <input type="text" id="search-input" onkeyup="filterTableData(true)" placeholder="พิมพ์ค้นหา..." class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <input type="text" id="search-input" onkeyup="filterTableData(true)" placeholder="พิมพ์ค้นหา เช่น 2.5, ดีมาก, a1..." class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
                     </div>
                 </div>
                 <div>
@@ -498,9 +500,20 @@
                     <label class="block text-slate-600 font-medium mb-1">ถึงวันที่</label>
                     <input type="date" id="filter-end-date" onchange="filterTableData(true)" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
+                <div>
+                    <label class="block text-slate-600 font-medium mb-1">จำนวนข้อมูลที่ดึง</label>
+                    <select id="data-limit-select" onchange="changeDataLimit(this.value)" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium cursor-pointer">
+                        <option value="25">25 รายการล่าสุด</option>
+                        <option value="50">50 รายการล่าสุด</option>
+                        <option value="100" selected>100 รายการล่าสุด</option>
+                        <option value="250">250 รายการล่าสุด</option>
+                        <option value="500">500 รายการล่าสุด</option>
+                        <option value="1000">1,000 รายการล่าสุด</option>
+                    </select>
+                </div>
                 <div class="flex items-end">
-                    <button onclick="resetFilters()" class="w-full py-1.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition">
-                        <i class="fa-solid fa-arrow-rotate-left mr-1"></i> ล้างตัวกรอง
+                    <button onclick="resetFilters()" class="w-full py-1.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> ล้างตัวกรอง
                     </button>
                 </div>
             </div>
@@ -764,11 +777,11 @@
             tableId: "mmo2nkzx4m7mc2d",
             token: "U3WjT_etA7hXLe2uFhVhFYvLppouR3-W--CqCnO8",
             refreshInterval: 5000,
-            dataLimit: 25,
+            dataLimit: 100,
             telegramToken: "8974699444:AAHoVIXSNMiBa9h-PB1iyrQdlbBtPyOUJ2s",
             telegramChatId: "7903084332",
             telegramEnabled: true,
-            version: "2.2"
+            version: "2.3"
         };
 
         // App State
@@ -918,12 +931,41 @@
             });
         }
 
+        // Parse "YYYY-MM-DD" from date picker into local Date
+        function parseInputDate(dateStr, isEndOfDay = false) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return null;
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10) - 1;
+            const d = parseInt(parts[2], 10);
+            if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+            if (isEndOfDay) {
+                return new Date(y, m, d, 23, 59, 59, 999);
+            }
+            return new Date(y, m, d, 0, 0, 0, 0);
+        }
+
+        // Get safe Date object from database timestamp
+        function getRecordDate(rawTime) {
+            if (!rawTime) return null;
+            let str = String(rawTime).trim();
+            if (str.includes(' ') && !str.includes('T')) {
+                str = str.replace(' ', 'T');
+            }
+            const date = new Date(str);
+            if (!isNaN(date.getTime())) return date;
+            
+            const fallback = new Date(rawTime);
+            return isNaN(fallback.getTime()) ? null : fallback;
+        }
+
         // Format Date/Time helper
         function formatDateTime(isoString) {
             if (!isoString) return { dateStr: '--/--/----', timeStr: '--:--:--', full: '-' };
             try {
-                const date = new Date(isoString);
-                if (isNaN(date.getTime())) return { dateStr: isoString, timeStr: '', full: isoString };
+                const date = getRecordDate(isoString);
+                if (!date) return { dateStr: isoString, timeStr: '', full: isoString };
                 
                 // Format in Thai locale
                 const timeStr = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -1113,6 +1155,7 @@
                     const deviceId = item['Device ID'] ?? item.device_id ?? 'a1';
                     const rawTime = item.Timestamp || item.CreatedAt || item.created_at || '';
                     const dt = formatDateTime(rawTime);
+                    const aqi = getAQIStatus(pm25);
 
                     return {
                         id: item.Id,
@@ -1123,7 +1166,10 @@
                         rawTime,
                         timeFormatted: dt.timeStr,
                         dateFormatted: dt.dateStr,
-                        fullFormatted: dt.full
+                        fullFormatted: dt.full,
+                        aqiLabel: aqi.label,
+                        aqiShortLabel: aqi.shortLabel,
+                        aqiColorName: aqi.colorName
                     };
                 });
 
@@ -1296,34 +1342,39 @@
         // Filter Table Data
         function filterTableData(resetPage = false) {
             const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
-            const startDate = document.getElementById('filter-start-date')?.value;
-            const endDate = document.getElementById('filter-end-date')?.value;
+            const startDateStr = document.getElementById('filter-start-date')?.value;
+            const endDateStr = document.getElementById('filter-end-date')?.value;
+
+            const startDate = parseInputDate(startDateStr, false);
+            const endDate = parseInputDate(endDateStr, true);
 
             filteredRecords = allRecords.filter(r => {
-                // Search query match
-                const matchesQuery = !query || 
-                    String(r.id).includes(query) || 
-                    r.deviceId.toLowerCase().includes(query) || 
-                    r.fullFormatted.toLowerCase().includes(query) ||
-                    String(r.pm25).includes(query) ||
-                    String(r.gas).includes(query);
+                // 1. Text Search query match
+                if (query) {
+                    const matchText = (
+                        String(r.id) + ' ' +
+                        (r.deviceId || '') + ' ' +
+                        (r.fullFormatted || '') + ' ' +
+                        (r.dateFormatted || '') + ' ' +
+                        (r.timeFormatted || '') + ' ' +
+                        String(r.pm25) + ' ' +
+                        String(r.gas) + ' ' +
+                        (r.gasType || '') + ' ' +
+                        (r.aqiLabel || '') + ' ' +
+                        (r.aqiShortLabel || '') + ' ' +
+                        (r.aqiColorName || '')
+                    ).toLowerCase();
 
-                if (!matchesQuery) return false;
+                    if (!matchText.includes(query)) return false;
+                }
 
-                // Date filtering
+                // 2. Date filtering
                 if (startDate || endDate) {
-                    const recordDate = new Date(r.rawTime);
-                    if (!isNaN(recordDate.getTime())) {
-                        if (startDate) {
-                            const start = new Date(startDate);
-                            start.setHours(0, 0, 0, 0);
-                            if (recordDate < start) return false;
-                        }
-                        if (endDate) {
-                            const end = new Date(endDate);
-                            end.setHours(23, 59, 59, 999);
-                            if (recordDate > end) return false;
-                        }
+                    const recordDate = getRecordDate(r.rawTime);
+                    if (recordDate) {
+                        const recTime = recordDate.getTime();
+                        if (startDate && recTime < startDate.getTime()) return false;
+                        if (endDate && recTime > endDate.getTime()) return false;
                     }
                 }
 
@@ -1460,6 +1511,9 @@
         function changeDataLimit(limit) {
             config.dataLimit = parseInt(limit, 10);
             saveConfigToStorage();
+            document.querySelectorAll('.data-limit-select').forEach(sel => {
+                sel.value = config.dataLimit;
+            });
             fetchAirData(true);
         }
 
@@ -1621,8 +1675,9 @@
             const refreshSelect = document.getElementById('auto-refresh-select');
             if (refreshSelect) refreshSelect.value = config.refreshInterval;
             
-            const limitSelect = document.getElementById('data-limit-select');
-            if (limitSelect) limitSelect.value = config.dataLimit;
+            document.querySelectorAll('.data-limit-select').forEach(sel => {
+                sel.value = config.dataLimit;
+            });
 
             initChart();
             fetchAirData();
