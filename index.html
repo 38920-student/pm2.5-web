@@ -1463,7 +1463,37 @@
             document.getElementById('pagination-controls').innerHTML = pageHtml;
         }
 
-        // Search & Filter History Records (Direct API Query for dates)
+        // Fetch all database records across all historical dates from NocoDB
+        async function fetchAllDatabaseRecords() {
+            let combined = [];
+            const chunkSize = 1000;
+            let offset = 0;
+            let totalRows = Infinity;
+
+            while (offset < totalRows && offset < 5000) {
+                const url = `${config.baseUrl}/api/v2/tables/${config.tableId}/records?limit=${chunkSize}&offset=${offset}&sort=-Id`;
+                const res = await fetch(url, {
+                    headers: {
+                        'accept': 'application/json',
+                        'xc-token': config.token
+                    }
+                });
+                if (!res.ok) break;
+                const data = await res.json();
+                const list = data.list || [];
+                if (list.length === 0) break;
+                
+                combined = combined.concat(list);
+                totalRows = data.pageInfo?.totalRows || list.length;
+                offset += chunkSize;
+
+                if (list.length < chunkSize) break;
+            }
+
+            return combined;
+        }
+
+        // Search & Filter History Records (Direct API Query for all historical dates)
         async function performHistorySearch() {
             const query = (document.getElementById('search-input')?.value || '').trim();
             const startDateStr = document.getElementById('filter-start-date')?.value;
@@ -1471,49 +1501,20 @@
             const searchBtn = document.getElementById('btn-history-search');
             const searchStatus = document.getElementById('history-search-status');
 
-            // If date range is specified, query NocoDB API directly to fetch historical records up to 1000 items
-            if (startDateStr || endDateStr) {
-                if (searchBtn) {
-                    searchBtn.disabled = true;
-                    searchBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังค้นหา...';
-                }
-                if (searchStatus) {
-                    searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-sky-50 text-sky-800 border border-sky-200 block';
-                    searchStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sky-600 mr-1.5"></i> กำลังค้นหาข้อมูลจากฐานข้อมูล NocoDB ตามช่วงวันที่ที่ระบุ...';
-                }
+            if (searchBtn) {
+                searchBtn.disabled = true;
+                searchBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังค้นหา...';
+            }
+            if (searchStatus) {
+                searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-sky-50 text-sky-800 border border-sky-200 block';
+                searchStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sky-600 mr-1.5"></i> กำลังโหลดและค้นหาประวัติข้อมูลจากฐานข้อมูล NocoDB...';
+            }
 
-                try {
-                    let whereParam = '';
-                    const startObj = parseInputDate(startDateStr, false);
-                    const endObj = parseInputDate(endDateStr, true);
-
-                    const conds = [];
-                    if (startObj) {
-                        const sUTC = startObj.toISOString().replace('T', ' ').slice(0, 19);
-                        conds.push(`(Timestamp,ge,${sUTC})`);
-                    }
-                    if (endObj) {
-                        const eUTC = endObj.toISOString().replace('T', ' ').slice(0, 19);
-                        conds.push(`(Timestamp,le,${eUTC})`);
-                    }
-
-                    if (conds.length > 0) {
-                        whereParam = `&where=${encodeURIComponent(conds.join('~and'))}`;
-                    }
-
-                    const searchUrl = `${config.baseUrl}/api/v2/tables/${config.tableId}/records?limit=1000&sort=-Id${whereParam}`;
-                    const res = await fetch(searchUrl, {
-                        method: 'GET',
-                        headers: {
-                            'accept': 'application/json',
-                            'xc-token': config.token
-                        }
-                    });
-
-                    if (res.ok) {
-                        const resData = await res.json();
-                        const rawList = resData.list || [];
-                        
+            try {
+                // If searching by date range, always fetch all records from database to guarantee historical dates are found
+                if (startDateStr || endDateStr) {
+                    const rawList = await fetchAllDatabaseRecords();
+                    if (rawList && rawList.length > 0) {
                         allRecords = rawList.map(item => {
                             const pm25 = parseFloat(item['PM 2.5 Value'] ?? item.pm25 ?? item['PM2.5'] ?? 0);
                             const gas = parseFloat(item['Gas Value'] ?? item.gas ?? item['Gas'] ?? 0);
@@ -1538,42 +1539,28 @@
                                 aqiColorName: aqi.colorName
                             };
                         });
-
-                        currentPage = 1;
-                        filterTableData(true);
-
-                        if (searchStatus) {
-                            if (filteredRecords.length > 0) {
-                                searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 block';
-                                searchStatus.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> พบข้อมูล <strong>${filteredRecords.length}</strong> รายการ จากการค้นหาวันที่ <strong>${startDateStr || 'เริ่มต้น'}</strong> ถึง <strong>${endDateStr || 'ปัจจุบัน'}</strong>`;
-                            } else {
-                                searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200 block';
-                                searchStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1.5"></i> ไม่พบข้อมูลในช่วงวันที่ <strong>${startDateStr || 'เริ่มต้น'}</strong> ถึง <strong>${endDateStr || 'ปัจจุบัน'}</strong> ในฐานข้อมูล`;
-                            }
-                        }
-                    } else {
-                        filterTableData(true);
-                    }
-                } catch (err) {
-                    console.error("Search error:", err);
-                    filterTableData(true);
-                } finally {
-                    if (searchBtn) {
-                        searchBtn.disabled = false;
-                        searchBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1.5"></i> ค้นหาข้อมูล';
                     }
                 }
-            } else {
-                // Text-only search in memory
+
                 currentPage = 1;
                 filterTableData(true);
+
                 if (searchStatus) {
-                    if (query) {
-                        searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-sky-50 text-sky-800 border border-sky-200 block';
-                        searchStatus.innerHTML = `<i class="fa-solid fa-circle-check text-sky-600 mr-1.5"></i> ผลการค้นหา "${query}": พบ <strong>${filteredRecords.length}</strong> รายการ`;
+                    if (filteredRecords.length > 0) {
+                        searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+                        searchStatus.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> พบข้อมูล <strong>${filteredRecords.length}</strong> รายการ จากการค้นหา${startDateStr ? ' ตั้งแต่วันที่ <strong>' + startDateStr + '</strong>' : ''}${endDateStr ? ' ถึงวันที่ <strong>' + endDateStr + '</strong>' : ''}${query ? ' (คำค้น: "' + query + '")' : ''}`;
                     } else {
-                        searchStatus.className = 'hidden';
+                        searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200 block';
+                        searchStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1.5"></i> ไม่พบข้อมูลในช่วงวันที่หรือคำค้นหาที่ระบุ (ค้นหาจากฐานข้อมูลทั้งหมด ${allRecords.length} รายการ)`;
                     }
+                }
+            } catch (err) {
+                console.error("Search error:", err);
+                filterTableData(true);
+            } finally {
+                if (searchBtn) {
+                    searchBtn.disabled = false;
+                    searchBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1.5"></i> ค้นหาข้อมูล';
                 }
             }
         }
