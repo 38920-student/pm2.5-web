@@ -315,11 +315,14 @@
         <div class="glass-card rounded-2xl p-5 sm:p-6 shadow-sm">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
-                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-line text-sky-500"></i>
-                        กราฟแนวโน้มคุณภาพอากาศ (Trends)
-                    </h3>
-                    <p class="text-xs text-slate-500 mt-0.5">แสดงการเปลี่ยนแปลงของค่า PM 2.5 และก๊าซตามลำดับเวลา</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-sky-500"></i>
+                            กราฟแนวโน้มคุณภาพอากาศ (Trends)
+                        </h3>
+                        <div id="chart-day-info"></div>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">แสดงข้อมูลแนวโน้มคุณภาพอากาศและระดับก๊าซแบบรายวัน</p>
                 </div>
 
                 <!-- Chart Controls -->
@@ -331,12 +334,9 @@
                         <button onclick="setChartSeries('gas')" id="btn-chart-gas" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">ก๊าซ</button>
                     </div>
 
-                    <!-- Chart Points Selector -->
-                    <select id="chart-points-select" onchange="changeChartPoints(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
-                        <option value="15">15 จุดล่าสุด (มือถือ)</option>
-                        <option value="25" selected>25 จุดล่าสุด</option>
-                        <option value="50">50 จุดล่าสุด</option>
-                        <option value="100">100 จุดล่าสุด</option>
+                    <!-- Date Selector for Daily Chart -->
+                    <select id="chart-date-select" onchange="changeChartDate(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
+                        <!-- Populated dynamically from available dates in DB -->
                     </select>
                 </div>
             </div>
@@ -1298,21 +1298,76 @@
             filterTableData(false);
         }
 
-        let chartPointsLimit = 25;
+        let selectedChartDate = ''; // Target date string YYYY-MM-DD for daily chart
 
-        function changeChartPoints(limit) {
-            chartPointsLimit = parseInt(limit, 10);
+        // Helper to extract YYYY-MM-DD from record
+        function getRecordDateString(r) {
+            const dateObj = getRecordDate(r.rawTime);
+            if (!dateObj) return '';
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        // Dynamically populate the date dropdown on Trends card
+        function populateChartDateOptions() {
+            const selectElem = document.getElementById('chart-date-select');
+            if (!selectElem || !allRecords || allRecords.length === 0) return;
+
+            // Extract distinct dates from allRecords
+            const dateMap = new Map();
+            allRecords.forEach(r => {
+                const dateKey = getRecordDateString(r);
+                if (dateKey && !dateMap.has(dateKey)) {
+                    const dateObj = getRecordDate(r.rawTime);
+                    const thaiLabel = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                    dateMap.set(dateKey, thaiLabel);
+                }
+            });
+
+            const sortedDates = Array.from(dateMap.keys()).sort().reverse();
+            if (sortedDates.length === 0) return;
+
+            // If selectedChartDate is not set or not in list, default to newest date
+            if (!selectedChartDate || !dateMap.has(selectedChartDate)) {
+                selectedChartDate = sortedDates[0];
+            }
+
+            const todayKey = new Date().toISOString().slice(0, 10);
+            let html = '';
+            sortedDates.forEach(dateKey => {
+                const label = dateMap.get(dateKey);
+                const isToday = (dateKey === todayKey || dateKey === sortedDates[0]);
+                const displayLabel = isToday ? `📅 วันนี้ (${label})` : `📅 ${label}`;
+                const isSelected = (dateKey === selectedChartDate) ? 'selected' : '';
+                html += `<option value="${dateKey}" ${isSelected}>${displayLabel}</option>`;
+            });
+
+            selectElem.innerHTML = html;
+        }
+
+        function changeChartDate(dateStr) {
+            selectedChartDate = dateStr;
             updateChartData(allRecords);
         }
 
-        // Update Chart
+        // Update Chart for Selected Day
         function updateChartData(records) {
             if (!chartInstance || !records || records.length === 0) return;
 
-            const isMobile = window.innerWidth < 640;
-            // Limit points displayed on chart to prevent crowded points on mobile screens
-            const limit = chartPointsLimit || (isMobile ? 20 : 30);
-            const chartRecords = records.slice(0, limit).reverse();
+            // Ensure date dropdown options are populated
+            populateChartDateOptions();
+
+            // Filter records for the selected day
+            const targetDate = selectedChartDate || getRecordDateString(records[0]);
+            const dayRecords = records.filter(r => getRecordDateString(r) === targetDate);
+
+            // If records for selected day exist, use them; otherwise fallback to recent
+            const displayRecords = dayRecords.length > 0 ? dayRecords : records.slice(0, 50);
+
+            // Sort chronologically (oldest to newest throughout the day)
+            const chartRecords = [...displayRecords].reverse();
 
             const labels = chartRecords.map(r => r.timeFormatted || r.rawTime);
             const pmData = chartRecords.map(r => r.pm25);
@@ -1322,15 +1377,23 @@
             chartInstance.data.datasets[0].data = pmData;
             chartInstance.data.datasets[1].data = gasData;
 
-            // Optimize point radius for clean mobile viewing
-            const pRadius = chartRecords.length > 30 ? 1.5 : (isMobile ? 2 : 3);
+            // Optimize point radius & tick count for mobile
+            const isMobile = window.innerWidth < 640;
+            const pRadius = chartRecords.length > 30 ? 1.5 : (isMobile ? 2.5 : 3);
             chartInstance.data.datasets[0].pointRadius = pRadius;
             chartInstance.data.datasets[1].pointRadius = pRadius;
 
-            // X-axis tick limits for clean spacing on mobile
             if (chartInstance.options.scales.x) {
-                chartInstance.options.scales.x.ticks.maxTicksLimit = isMobile ? 5 : 10;
+                chartInstance.options.scales.x.ticks.maxTicksLimit = isMobile ? 6 : 10;
                 chartInstance.options.scales.x.ticks.maxRotation = isMobile ? 0 : 35;
+            }
+
+            // Update day info badge
+            const chartSub = document.getElementById('chart-day-info');
+            if (chartSub && dayRecords.length > 0) {
+                const dateObj = getRecordDate(dayRecords[0].rawTime);
+                const thaiDate = dateObj ? dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
+                chartSub.innerHTML = `<span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-sky-200"><i class="fa-solid fa-calendar-day text-sky-500"></i> ${thaiDate} (${dayRecords.length} จุด)</span>`;
             }
 
             // Handle series visibility
