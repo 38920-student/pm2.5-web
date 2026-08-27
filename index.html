@@ -490,16 +490,16 @@
                         <label class="block text-slate-600 font-medium mb-1">ค้นหาคำ / ID / สถานะ</label>
                         <div class="relative">
                             <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400"></i>
-                            <input type="text" id="search-input" onkeydown="if(event.key==='Enter') performHistorySearch()" placeholder="พิมพ์ค้นหา เช่น 2.5, ดีมาก, a1..." class="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <input type="text" id="search-input" onkeyup="if(event.key==='Enter') performHistorySearch()" placeholder="พิมพ์ค้นหา เช่น 2.5, ดีมาก, a1..." class="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
                         </div>
                     </div>
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">ตั้งแต่วันที่</label>
-                        <input type="date" id="filter-start-date" onkeydown="if(event.key==='Enter') performHistorySearch()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <input type="date" id="filter-start-date" onchange="performHistorySearch()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer">
                     </div>
                     <div>
                         <label class="block text-slate-600 font-medium mb-1">ถึงวันที่</label>
-                        <input type="date" id="filter-end-date" onkeydown="if(event.key==='Enter') performHistorySearch()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <input type="date" id="filter-end-date" onchange="performHistorySearch()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer">
                     </div>
                     <div class="flex items-end">
                         <button onclick="performHistorySearch()" id="btn-history-search" class="w-full py-2 px-4 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
@@ -791,6 +791,7 @@
         let config = { ...DEFAULT_CONFIG };
         let allRecords = [];
         let filteredRecords = [];
+        let isHistorySearchMode = false;
         let refreshTimerId = null;
         let countdownValue = 5;
         let countdownTimerId = null;
@@ -1128,6 +1129,12 @@
 
         // Fetch Data directly from NocoDB API
         async function fetchAirData(isManual = false) {
+            // If in history search mode and this is automatic periodic background refresh, do not overwrite search results
+            if (isHistorySearchMode && !isManual) {
+                resetCountdown();
+                return;
+            }
+
             const refreshIcon = document.getElementById('refresh-icon');
             if (isManual && refreshIcon) refreshIcon.classList.add('fa-spin');
 
@@ -1349,7 +1356,8 @@
             const endDateStr = document.getElementById('filter-end-date')?.value;
 
             const startDate = parseInputDate(startDateStr, false);
-            const endDate = parseInputDate(endDateStr, true);
+            // If endDateStr is empty and startDateStr is set, match the entire single day of startDateStr
+            const endDate = endDateStr ? parseInputDate(endDateStr, true) : (startDateStr ? parseInputDate(startDateStr, true) : null);
 
             filteredRecords = allRecords.filter(r => {
                 // 1. Text Search query match
@@ -1495,6 +1503,7 @@
 
         // Search & Filter History Records (Direct API Query for all historical dates)
         async function performHistorySearch() {
+            isHistorySearchMode = true;
             const query = (document.getElementById('search-input')?.value || '').trim();
             const startDateStr = document.getElementById('filter-start-date')?.value;
             const endDateStr = document.getElementById('filter-end-date')?.value;
@@ -1545,10 +1554,15 @@
                 currentPage = 1;
                 filterTableData(true);
 
+                // Update chart with filtered records if available
+                if (filteredRecords.length > 0) {
+                    updateChartData(filteredRecords);
+                }
+
                 if (searchStatus) {
                     if (filteredRecords.length > 0) {
                         searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 block';
-                        searchStatus.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> พบข้อมูล <strong>${filteredRecords.length}</strong> รายการ จากการค้นหา${startDateStr ? ' ตั้งแต่วันที่ <strong>' + startDateStr + '</strong>' : ''}${endDateStr ? ' ถึงวันที่ <strong>' + endDateStr + '</strong>' : ''}${query ? ' (คำค้น: "' + query + '")' : ''}`;
+                        searchStatus.innerHTML = `<div class="flex flex-wrap items-center justify-between gap-2"><div><i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> พบข้อมูล <strong>${filteredRecords.length}</strong> รายการ จากการค้นหา${startDateStr ? ' วันที่ <strong>' + startDateStr + '</strong>' : ''}${endDateStr && endDateStr !== startDateStr ? ' ถึงวันที่ <strong>' + endDateStr + '</strong>' : ''}${query ? ' (คำค้น: "' + query + '")' : ''}</div><span class="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-medium">โหมดดูประวัติย้อนหลัง (ปิดรีเฟรชชั่วคราว)</span></div>`;
                     } else {
                         searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200 block';
                         searchStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1.5"></i> ไม่พบข้อมูลในช่วงวันที่หรือคำค้นหาที่ระบุ (ค้นหาจากฐานข้อมูลทั้งหมด ${allRecords.length} รายการ)`;
@@ -1573,6 +1587,7 @@
         }
 
         function resetFilters() {
+            isHistorySearchMode = false;
             document.getElementById('search-input').value = '';
             document.getElementById('filter-start-date').value = '';
             document.getElementById('filter-end-date').value = '';
