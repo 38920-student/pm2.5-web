@@ -136,8 +136,13 @@
                         <span class="hidden sm:inline">เกณฑ์มาตรฐาน PCD</span>
                     </button>
 
+                    <!-- Quick Telegram Notification Button -->
+                    <button onclick="sendCurrentStatusToTelegram()" title="ส่งแจ้งเตือนค่าล่าสุดเข้า Telegram ทันที" class="p-2 rounded-lg text-sky-600 hover:text-sky-700 hover:bg-sky-50 border border-sky-200 transition shadow-sm">
+                        <i class="fa-brands fa-telegram text-base"></i>
+                    </button>
+
                     <!-- Settings Button -->
-                    <button onclick="openSettingsModal()" title="ตั้งค่าการเชื่อมต่อ API" class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition shadow-sm">
+                    <button onclick="openSettingsModal()" title="ตั้งค่าการเชื่อมต่อ API & Telegram" class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition shadow-sm">
                         <i class="fa-solid fa-sliders text-sm"></i>
                     </button>
                 </div>
@@ -624,11 +629,11 @@
                 </div>
 
                 <hr class="border-slate-200 my-2">
-                <div class="space-y-2">
+                <div class="space-y-2.5">
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-slate-800 flex items-center gap-1.5">
                             <i class="fa-brands fa-telegram text-sky-500 text-sm"></i>
-                            การแจ้งเตือน Telegram (เมื่อ PM 2.5 &gt; 75)
+                            การแจ้งเตือน Telegram (Telegram Notifications)
                         </span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="setting-tg-enabled" class="sr-only peer">
@@ -637,24 +642,33 @@
                     </div>
                     <div>
                         <label class="block text-slate-700 font-medium mb-1">Telegram Bot Token</label>
-                        <input type="password" id="setting-tg-token" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ">
+                        <input type="password" id="setting-tg-token" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="8974699444:AAHoVIXSNMiBa9h-PB1iyrQdlbBtPyOUJ2s">
                     </div>
                     <div>
                         <label class="block text-slate-700 font-medium mb-1">Telegram Chat ID</label>
-                        <input type="text" id="setting-tg-chatid" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="123456789 หรือ -100123456789">
+                        <input type="text" id="setting-tg-chatid" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="7903084332">
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 font-medium mb-1">เกณฑ์ค่าฝุ่น PM 2.5 ที่จะส่งแจ้งเตือน</label>
+                        <select id="setting-tg-threshold" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none bg-white">
+                            <option value="37.5">มากกว่า 37.5 µg/m³ (เริ่มมีผลกระทบต่อสุขภาพ - สีส้มขึ้นไป) [แนะนำ]</option>
+                            <option value="75.0">มากกว่า 75.0 µg/m³ (มีผลกระทบต่อสุขภาพ - สีแดงเท่านั้น)</option>
+                            <option value="25.0">มากกว่า 25.0 µg/m³ (ปานกลางขึ้นไป - สีเหลืองขึ้นไป)</option>
+                            <option value="0">ส่งทุกค่าที่ตรวจพบ (สำหรับทดสอบส่งค่าเข้า Telegram)</option>
+                        </select>
                     </div>
                 </div>
 
                 <div id="settings-test-result" class="hidden p-2.5 rounded-lg text-xs font-medium"></div>
             </div>
 
-            <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 border-t border-slate-100">
                 <button onclick="resetDefaultSettings()" class="text-xs text-rose-600 hover:underline">
                     คืนค่าเริ่มต้น
                 </button>
-                <div class="flex gap-2">
-                    <button onclick="testTelegramAlert()" class="px-3 py-2 rounded-lg border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-medium transition">
-                        <i class="fa-brands fa-telegram mr-1"></i> ทดสอบส่ง Telegram
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                    <button onclick="sendCurrentStatusToTelegram()" class="px-3 py-2 rounded-lg border border-sky-300 bg-sky-50 hover:bg-sky-100 text-sky-800 text-xs font-medium transition flex items-center gap-1">
+                        <i class="fa-solid fa-paper-plane text-sky-600"></i> ส่งค่าล่าสุดเข้า Telegram
                     </button>
                     <button onclick="testConnection()" class="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium transition">
                         ทดสอบ NocoDB
@@ -816,7 +830,8 @@
             telegramToken: "8974699444:AAHoVIXSNMiBa9h-PB1iyrQdlbBtPyOUJ2s",
             telegramChatId: "7903084332",
             telegramEnabled: true,
-            version: "2.3"
+            telegramThreshold: 37.5,
+            version: "2.4"
         };
 
         // App State
@@ -832,18 +847,26 @@
         let currentPage = 1;
         const rowsPerPage = 10;
         let lastTelegramAlertTime = 0;
-        const TELEGRAM_ALERT_COOLDOWN = 300000; // 5 minutes in ms
+        const TELEGRAM_ALERT_COOLDOWN = 180000; // 3 minutes cooldown
 
         // Load saved config from localStorage with auto-upgrade support
         function loadStoredConfig() {
             const saved = localStorage.getItem('airguard_config_v2');
             if (saved) {
                 try {
-                    config = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
+                    const parsed = JSON.parse(saved);
+                    if (parsed.version !== DEFAULT_CONFIG.version) {
+                        config = { ...DEFAULT_CONFIG, ...parsed, telegramToken: DEFAULT_CONFIG.telegramToken, telegramChatId: DEFAULT_CONFIG.telegramChatId, telegramEnabled: true, version: DEFAULT_CONFIG.version };
+                        saveConfigToStorage();
+                    } else {
+                        config = { ...DEFAULT_CONFIG, ...parsed };
+                    }
                 } catch (e) {
                     console.error('Error loading config from localStorage:', e);
+                    config = { ...DEFAULT_CONFIG };
                 }
             } else {
+                config = { ...DEFAULT_CONFIG };
                 saveConfigToStorage();
             }
         }
@@ -1252,9 +1275,13 @@
                     }
                 }
 
-                // Check PM 2.5 alert threshold (> 75)
-                if (allRecords.length > 0 && allRecords[0].pm25 > 75.0) {
-                    triggerTelegramAlert(allRecords[0].pm25, allRecords[0].gas, allRecords[0].fullFormatted, allRecords[0].deviceId);
+                // Check PM 2.5 alert threshold
+                if (allRecords.length > 0 && config.telegramEnabled) {
+                    const latestRec = allRecords[0];
+                    const threshold = (typeof config.telegramThreshold === 'number') ? config.telegramThreshold : 37.5;
+                    if (latestRec.pm25 > threshold || threshold === 0) {
+                        triggerTelegramAlert(latestRec.pm25, latestRec.gas, latestRec.fullFormatted, latestRec.deviceId);
+                    }
                 }
 
                 // Update UI elements
@@ -1945,9 +1972,10 @@
             document.getElementById('setting-api-url').value = config.baseUrl;
             document.getElementById('setting-table-id').value = config.tableId;
             document.getElementById('setting-api-token').value = config.token;
-            document.getElementById('setting-tg-token').value = config.telegramToken || '';
-            document.getElementById('setting-tg-chatid').value = config.telegramChatId || '';
-            document.getElementById('setting-tg-enabled').checked = !!config.telegramEnabled;
+            document.getElementById('setting-tg-token').value = config.telegramToken || DEFAULT_CONFIG.telegramToken;
+            document.getElementById('setting-tg-chatid').value = config.telegramChatId || DEFAULT_CONFIG.telegramChatId;
+            document.getElementById('setting-tg-enabled').checked = (config.telegramEnabled !== undefined) ? config.telegramEnabled : true;
+            document.getElementById('setting-tg-threshold').value = String(config.telegramThreshold !== undefined ? config.telegramThreshold : 37.5);
             document.getElementById('settings-test-result').classList.add('hidden');
             document.getElementById('settings-modal').classList.remove('hidden');
         }
@@ -1960,28 +1988,139 @@
             document.getElementById('setting-api-url').value = DEFAULT_CONFIG.baseUrl;
             document.getElementById('setting-table-id').value = DEFAULT_CONFIG.tableId;
             document.getElementById('setting-api-token').value = DEFAULT_CONFIG.token;
-            document.getElementById('setting-tg-token').value = '';
-            document.getElementById('setting-tg-chatid').value = '';
-            document.getElementById('setting-tg-enabled').checked = false;
+            document.getElementById('setting-tg-token').value = DEFAULT_CONFIG.telegramToken;
+            document.getElementById('setting-tg-chatid').value = DEFAULT_CONFIG.telegramChatId;
+            document.getElementById('setting-tg-enabled').checked = DEFAULT_CONFIG.telegramEnabled;
+            document.getElementById('setting-tg-threshold').value = String(DEFAULT_CONFIG.telegramThreshold);
         }
 
-        async function testTelegramAlert() {
-            const token = document.getElementById('setting-tg-token').value.trim();
-            const chatId = document.getElementById('setting-tg-chatid').value.trim();
+        async function triggerTelegramAlert(pm25, gas, fullFormatted, deviceId, force = false) {
+            const token = config.telegramToken || DEFAULT_CONFIG.telegramToken;
+            const chatId = config.telegramChatId || DEFAULT_CONFIG.telegramChatId;
+            const enabled = (config.telegramEnabled !== undefined) ? config.telegramEnabled : true;
+
+            if (!enabled || !token || !chatId) {
+                console.log('Telegram alerts disabled or missing credentials');
+                return false;
+            }
+
+            const now = Date.now();
+            if (!force && (now - lastTelegramAlertTime < TELEGRAM_ALERT_COOLDOWN)) {
+                console.log('Telegram alert skipped due to cooldown');
+                return false;
+            }
+
+            const aqi = getAQIStatus(pm25);
+            let alertEmoji = '⚠️';
+            if (pm25 > 75.0) alertEmoji = '🔴 🚨 <b>[วิกฤต - มีผลกระทบต่อสุขภาพ]</b>';
+            else if (pm25 > 37.5) alertEmoji = '🟠 ⚠️ <b>[เริ่มมีผลกระทบต่อสุขภาพ]</b>';
+            else if (pm25 > 25.0) alertEmoji = '🟡 <b>[ปานกลาง]</b>';
+            else if (pm25 > 15.0) alertEmoji = '🟢 <b>[อากาศดี]</b>';
+            else alertEmoji = '🔵 <b>[อากาศดีมาก]</b>';
+
+            const message = `🔔 <b>แจ้งเตือนคุณภาพอากาศ AirGuard</b>\n` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `🏷️ <b>ระดับ:</b> ${alertEmoji}\n` +
+                `📊 <b>PM 2.5:</b> <code>${Number(pm25).toFixed(2)} µg/m³</code>\n` +
+                `💨 <b>ก๊าซ (${allRecords[0]?.gasType || 'CO'}):</b> <code>${Number(gas).toFixed(2)} PPM</code>\n` +
+                `📍 <b>อุปกรณ์:</b> <code>${deviceId || 'a1'}</code>\n` +
+                `🕒 <b>เวลาบันทึก:</b> <code>${fullFormatted || new Date().toLocaleString('th-TH')}</code>\n` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `💡 <b>คำแนะนำ:</b> ${aqi.descGeneral}\n\n` +
+                `🌐 <a href="https://38920-student.github.io/pm2.5-web/">เปิดดู Dashboard Real-time</a>`;
+
+            try {
+                const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+                const res = await fetch(tgUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: message,
+                        parse_mode: 'HTML',
+                        disable_web_page_preview: true
+                    })
+                });
+
+                if (res.ok) {
+                    lastTelegramAlertTime = Date.now();
+                    console.log('Telegram alert sent successfully');
+                    return true;
+                } else {
+                    const err = await res.json();
+                    console.error('Failed to send Telegram alert:', err);
+                    return false;
+                }
+            } catch (err) {
+                console.error('Error sending Telegram alert:', err);
+                return false;
+            }
+        }
+
+        async function sendCurrentStatusToTelegram() {
+            const token = document.getElementById('setting-tg-token')?.value.trim() || config.telegramToken || DEFAULT_CONFIG.telegramToken;
+            const chatId = document.getElementById('setting-tg-chatid')?.value.trim() || config.telegramChatId || DEFAULT_CONFIG.telegramChatId;
             const resultBox = document.getElementById('settings-test-result');
 
             if (!token || !chatId) {
-                resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 block';
-                resultBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> กรุณากรอกทั้ง Telegram Bot Token และ Chat ID ก่อนทดสอบ';
+                if (resultBox) {
+                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 block';
+                    resultBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> กรุณากรอกทั้ง Telegram Bot Token และ Chat ID';
+                }
                 return;
             }
 
-            resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 block';
-            resultBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังส่งข้อความทดสอบไปยัง Telegram...';
+            config.telegramToken = token;
+            config.telegramChatId = chatId;
+            config.telegramEnabled = true;
+
+            if (resultBox) {
+                resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 block';
+                resultBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังส่งค่าปัจจุบันไปยัง Telegram...';
+            }
+
+            if (!allRecords || allRecords.length === 0) {
+                if (resultBox) {
+                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 block';
+                    resultBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> ยังไม่มีข้อมูลเซนเซอร์ในระบบ กรุณารอเชื่อมต่อสักครู่';
+                }
+                return;
+            }
+
+            const latest = allRecords[0];
+            const success = await triggerTelegramAlert(latest.pm25, latest.gas, latest.fullFormatted, latest.deviceId, true);
+            if (resultBox) {
+                if (success) {
+                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 block';
+                    resultBox.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i> ส่งค่าคุณภาพอากาศล่าสุดเข้า Telegram สำเร็จ!';
+                } else {
+                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 block';
+                    resultBox.innerHTML = '<i class="fa-solid fa-circle-xmark mr-1"></i> ส่งไม่สำเร็จ กรุณาตรวจสอบ Bot Token และ Chat ID';
+                }
+            }
+        }
+
+        async function testTelegramAlert() {
+            const token = document.getElementById('setting-tg-token')?.value.trim() || config.telegramToken || DEFAULT_CONFIG.telegramToken;
+            const chatId = document.getElementById('setting-tg-chatid')?.value.trim() || config.telegramChatId || DEFAULT_CONFIG.telegramChatId;
+            const resultBox = document.getElementById('settings-test-result');
+
+            if (!token || !chatId) {
+                if (resultBox) {
+                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 block';
+                    resultBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> กรุณากรอกทั้ง Telegram Bot Token และ Chat ID ก่อนทดสอบ';
+                }
+                return;
+            }
+
+            if (resultBox) {
+                resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 block';
+                resultBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังส่งข้อความทดสอบไปยัง Telegram...';
+            }
 
             const testMsg = `🔔 <b>ทดสอบการเชื่อมต่อ Telegram สำเร็จ!</b>\n\n` +
-                `ระบบติดตามคุณภาพอากาศ AirGuard พร้อมส่งแจ้งเตือนเมื่อค่าฝุ่น PM 2.5 &gt; 75 µg/m³\n` +
-                `🕒 เวลา: ${new Date().toLocaleString('th-TH')}`;
+                `ระบบติดตามคุณภาพอากาศ AirGuard พร้อมส่งแจ้งเตือนเมื่อค่าฝุ่นเกินเกณฑ์มาตรฐาน\n` +
+                `🕒 เวลาทดสอบ: ${new Date().toLocaleString('th-TH')}`;
 
             try {
                 const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
@@ -1996,16 +2135,22 @@
                 });
 
                 if (res.ok) {
-                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 block';
-                    resultBox.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i> ส่งข้อความเข้า Telegram สำเร็จ!';
+                    if (resultBox) {
+                        resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 block';
+                        resultBox.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i> ส่งข้อความเข้า Telegram สำเร็จ!';
+                    }
                 } else {
                     const errJson = await res.json();
-                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 block';
-                    resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> ส่งไม่สำเร็จ: ${errJson.description || 'HTTP ' + res.status}`;
+                    if (resultBox) {
+                        resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 block';
+                        resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> ส่งไม่สำเร็จ: ${errJson.description || 'HTTP ' + res.status}`;
+                    }
                 }
             } catch (err) {
-                resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 block';
-                resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> เกิดข้อผิดพลาด: ${err.message}`;
+                if (resultBox) {
+                    resultBox.className = 'p-2.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 block';
+                    resultBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> เกิดข้อผิดพลาด: ${err.message}`;
+                }
             }
         }
 
@@ -2044,9 +2189,10 @@
             config.baseUrl = document.getElementById('setting-api-url').value.trim() || DEFAULT_CONFIG.baseUrl;
             config.tableId = document.getElementById('setting-table-id').value.trim() || DEFAULT_CONFIG.tableId;
             config.token = document.getElementById('setting-api-token').value.trim() || DEFAULT_CONFIG.token;
-            config.telegramToken = document.getElementById('setting-tg-token').value.trim();
-            config.telegramChatId = document.getElementById('setting-tg-chatid').value.trim();
+            config.telegramToken = document.getElementById('setting-tg-token').value.trim() || DEFAULT_CONFIG.telegramToken;
+            config.telegramChatId = document.getElementById('setting-tg-chatid').value.trim() || DEFAULT_CONFIG.telegramChatId;
             config.telegramEnabled = document.getElementById('setting-tg-enabled').checked;
+            config.telegramThreshold = parseFloat(document.getElementById('setting-tg-threshold').value) || 0;
             
             saveConfigToStorage();
             closeSettingsModal();
