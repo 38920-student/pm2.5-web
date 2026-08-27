@@ -929,7 +929,10 @@
                             pan: {
                                 enabled: true,
                                 mode: 'x',
-                                modifierKey: null
+                                onPan: function({ chart }) {
+                                    const xScale = chart.scales.x;
+                                    updatePointRadiusAndBadge(xScale.min, xScale.max, selectedChartDate, currentDayRecords.length);
+                                }
                             },
                             zoom: {
                                 wheel: {
@@ -939,7 +942,11 @@
                                 pinch: {
                                     enabled: true
                                 },
-                                mode: 'x'
+                                mode: 'x',
+                                onZoom: function({ chart }) {
+                                    const xScale = chart.scales.x;
+                                    updatePointRadiusAndBadge(xScale.min, xScale.max, selectedChartDate, currentDayRecords.length);
+                                }
                             }
                         }
                     },
@@ -1357,8 +1364,7 @@
             filterTableData(false);
         }
 
-        let selectedChartDate = ''; // Target date string YYYY-MM-DD for daily chart
-        let chartPointsLimit = 25; // 15, 25, 50, 100, or 'all'
+        let currentDayRecords = []; // All records for the selected day in chronological order
 
         function changeChartPoints(limit) {
             chartPointsLimit = (limit === 'all') ? 'all' : parseInt(limit, 10);
@@ -1366,14 +1372,77 @@
         }
 
         function zoomChart(factor) {
-            if (chartInstance && typeof chartInstance.zoom === 'function') {
-                chartInstance.zoom(factor);
+            if (!chartInstance || !currentDayRecords.length) return;
+            const totalCount = currentDayRecords.length;
+            const xScale = chartInstance.scales.x;
+            const currentMin = (typeof xScale.min === 'number') ? xScale.min : 0;
+            const currentMax = (typeof xScale.max === 'number') ? xScale.max : totalCount - 1;
+            const currentRange = Math.max(1, currentMax - currentMin);
+
+            // factor > 1: Zoom in => FEWER points in view
+            // factor < 1: Zoom out => MORE points in view
+            const newRange = Math.max(5, Math.min(totalCount, Math.round(currentRange / factor)));
+            const center = (currentMin + currentMax) / 2;
+            let newMin = Math.round(center - newRange / 2);
+            let newMax = Math.round(center + newRange / 2);
+
+            if (newMin < 0) {
+                newMin = 0;
+                newMax = Math.min(totalCount - 1, newRange - 1);
             }
+            if (newMax >= totalCount) {
+                newMax = totalCount - 1;
+                newMin = Math.max(0, newMax - newRange + 1);
+            }
+
+            chartInstance.options.scales.x.min = newMin;
+            chartInstance.options.scales.x.max = newMax;
+            updatePointRadiusAndBadge(newMin, newMax, selectedChartDate, totalCount);
+            chartInstance.update();
         }
 
         function resetChartZoom() {
-            if (chartInstance && typeof chartInstance.resetZoom === 'function') {
-                chartInstance.resetZoom();
+            if (!chartInstance || !currentDayRecords.length) return;
+            const totalCount = currentDayRecords.length;
+            const initialCount = 25;
+            const minIndex = Math.max(0, totalCount - initialCount);
+            const maxIndex = totalCount - 1;
+
+            chartInstance.options.scales.x.min = minIndex;
+            chartInstance.options.scales.x.max = maxIndex;
+            updatePointRadiusAndBadge(minIndex, maxIndex, selectedChartDate, totalCount);
+            chartInstance.update();
+        }
+
+        function updatePointRadiusAndBadge(minIdx, maxIdx, targetDate, totalCount) {
+            if (!chartInstance) return;
+            const min = Math.max(0, Math.round(minIdx));
+            const max = Math.min(totalCount - 1, Math.round(maxIdx));
+            const visibleCount = Math.max(1, max - min + 1);
+
+            // Dynamic point dots: larger & distinct when zoomed in (fewer points), clean when zoomed out
+            let pRadius = 0;
+            if (visibleCount <= 15) pRadius = 4;
+            else if (visibleCount <= 30) pRadius = 2.5;
+            else if (visibleCount <= 60) pRadius = 1.5;
+            else pRadius = 0;
+
+            chartInstance.data.datasets[0].pointRadius = pRadius;
+            chartInstance.data.datasets[1].pointRadius = pRadius;
+
+            // Update day info badge
+            const chartSub = document.getElementById('chart-day-info');
+            if (chartSub) {
+                if (totalCount > 0) {
+                    const dateObj = (currentDayRecords[0] ? getRecordDate(currentDayRecords[0].rawTime) : null) || parseInputDate(targetDate, false);
+                    const thaiDate = dateObj ? dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
+                    const pointText = (visibleCount >= totalCount) ? `${totalCount} จุด (ทั้งหมด)` : `${visibleCount} จาก ${totalCount} จุด`;
+                    chartSub.innerHTML = `<span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-sky-200"><i class="fa-solid fa-calendar-day text-sky-500"></i> ${thaiDate} (${pointText})</span>`;
+                } else {
+                    const customDateObj = parseInputDate(targetDate, false);
+                    const thaiDate = customDateObj ? customDateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
+                    chartSub.innerHTML = `<span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-amber-200"><i class="fa-solid fa-triangle-exclamation text-amber-500"></i> ไม่พบข้อมูลวันที่ ${thaiDate}</span>`;
+                }
             }
         }
 
@@ -1518,54 +1587,39 @@
             const targetDate = selectedChartDate || getRecordDateString(records[0]);
             const dayRecords = records.filter(r => getRecordDateString(r) === targetDate);
 
-            // Base pool of records for that day (or fallback)
-            const baseRecords = dayRecords.length > 0 ? dayRecords : records;
+            // Base pool of records for that day (chronological: oldest to newest)
+            const baseRecords = (dayRecords.length > 0 ? dayRecords : records);
+            currentDayRecords = [...baseRecords].reverse();
 
-            // Apply points limit
-            let displayRecords = baseRecords;
-            if (chartPointsLimit !== 'all') {
-                const limitNum = typeof chartPointsLimit === 'number' ? chartPointsLimit : 25;
-                displayRecords = baseRecords.slice(0, limitNum);
-            }
-
-            // Sort chronologically (oldest to newest throughout the time period)
-            const chartRecords = [...displayRecords].reverse();
-
-            const labels = chartRecords.map(r => r.timeFormatted || r.rawTime);
-            const pmData = chartRecords.map(r => r.pm25);
-            const gasData = chartRecords.map(r => r.gas);
+            const totalCount = currentDayRecords.length;
+            const labels = currentDayRecords.map(r => r.timeFormatted || r.rawTime);
+            const pmData = currentDayRecords.map(r => r.pm25);
+            const gasData = currentDayRecords.map(r => r.gas);
 
             chartInstance.data.labels = labels;
             chartInstance.data.datasets[0].data = pmData;
             chartInstance.data.datasets[1].data = gasData;
 
-            // Optimize point radius & tick count for mobile
-            const isMobile = window.innerWidth < 640;
-            const pRadius = chartRecords.length > 30 ? 1.5 : (isMobile ? 2.5 : 3);
-            chartInstance.data.datasets[0].pointRadius = pRadius;
-            chartInstance.data.datasets[1].pointRadius = pRadius;
+            // Determine visible window based on chartPointsLimit
+            let initialCount = 25;
+            if (chartPointsLimit === 'all') {
+                initialCount = totalCount;
+            } else if (typeof chartPointsLimit === 'number') {
+                initialCount = Math.min(chartPointsLimit, totalCount);
+            }
+
+            const minIndex = Math.max(0, totalCount - initialCount);
+            const maxIndex = totalCount - 1;
 
             if (chartInstance.options.scales.x) {
-                chartInstance.options.scales.x.ticks.maxTicksLimit = isMobile ? 6 : 10;
-                chartInstance.options.scales.x.ticks.maxRotation = isMobile ? 0 : 35;
+                chartInstance.options.scales.x.min = minIndex;
+                chartInstance.options.scales.x.max = maxIndex;
+                chartInstance.options.scales.x.ticks.autoSkip = true;
+                chartInstance.options.scales.x.ticks.maxTicksLimit = (window.innerWidth < 640 ? 6 : 10);
             }
 
-            // Update day info badge
-            const chartSub = document.getElementById('chart-day-info');
-            if (chartSub) {
-                if (dayRecords.length > 0) {
-                    const dateObj = getRecordDate(dayRecords[0].rawTime);
-                    const thaiDate = dateObj ? dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
-                    const pointText = (chartPointsLimit === 'all' || displayRecords.length === dayRecords.length) 
-                        ? `${dayRecords.length} จุด` 
-                        : `${displayRecords.length} จาก ${dayRecords.length} จุด`;
-                    chartSub.innerHTML = `<span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-sky-200"><i class="fa-solid fa-calendar-day text-sky-500"></i> ${thaiDate} (${pointText})</span>`;
-                } else {
-                    const customDateObj = parseInputDate(targetDate, false);
-                    const thaiDate = customDateObj ? customDateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
-                    chartSub.innerHTML = `<span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-amber-200"><i class="fa-solid fa-triangle-exclamation text-amber-500"></i> ไม่พบข้อมูลวันที่ ${thaiDate}</span>`;
-                }
-            }
+            // Update point radius & badge text based on visible range
+            updatePointRadiusAndBadge(minIndex, maxIndex, targetDate, totalCount);
 
             // Handle series visibility
             if (activeChartSeries === 'pm25') {
