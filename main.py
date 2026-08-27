@@ -64,11 +64,19 @@ headers = {
 }
 
 # ==========================================
-# 4. Telegram Notification Configuration
+# 4. Telegram Notification & PCD Standards
 # ==========================================
+# เกณฑ์มาตรฐานคุณภาพอากาศ PM 2.5 ประเทศไทย (กรมควบคุมมลพิษ PCD / สคพ.3)
+# อ้างอิง: https://epo03.pcd.go.th/th/news/detail/178650
+# 🔵 ระดับ 1 (สีฟ้า): 0.0 - 15.0 µg/m³   -> อากาศดีมาก (Very Good)
+# 🟢 ระดับ 2 (สีเขียว): 15.1 - 25.0 µg/m³ -> อากาศดี (Good)
+# 🟡 ระดับ 3 (สีเหลือง): 25.1 - 37.5 µg/m³ -> ปานกลาง (Moderate)
+# 🟠 ระดับ 4 (สีส้ม): 37.6 - 75.0 µg/m³  -> เริ่มมีผลกระทบต่อสุขภาพ (Unhealthy for sensitive groups)
+# 🔴 ระดับ 5 (สีแดง): 75.1 µg/m³ ขึ้นไป  -> มีผลกระทบต่อสุขภาพ (Hazardous)
+
 TELEGRAM_BOT_TOKEN = "8974699444:AAHoVIXSNMiBa9h-PB1iyrQdlbBtPyOUJ2s"
 TELEGRAM_CHAT_ID = "7903084332"
-PM25_ALERT_THRESHOLD = 75.0                     # เกณฑ์แจ้งเตือน PM 2.5 (> 75 µg/m³ = มีผลกระทบต่อสุขภาพ)
+PM25_ALERT_THRESHOLD = 75.0                     # เกณฑ์แจ้งเตือน PM 2.5 (> 75.0 µg/m³ = ระดับสีแดง มีผลกระทบต่อสุขภาพ)
 ALERT_COOLDOWN_SECONDS = 300                    # ระยะเวลาหน่วงการส่งแจ้งเตือนซ้ำ (300 วินาที = 5 นาที) เพื่อไม่ให้ส่งถี่เกินไป
 last_alert_time = 0
 

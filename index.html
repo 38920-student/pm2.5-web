@@ -122,6 +122,12 @@
                         <i id="refresh-icon" class="fa-solid fa-arrows-rotate text-sm"></i>
                     </button>
 
+                    <!-- PCD Standard Guide Button -->
+                    <button onclick="openPcdInfoModal()" title="ดูเกณฑ์มาตรฐานคุณภาพอากาศ PM 2.5 (PCD)" class="px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-sky-600 hover:bg-sky-50 border border-slate-200 transition shadow-sm text-xs font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info text-sky-500"></i>
+                        <span class="hidden sm:inline">เกณฑ์มาตรฐาน PCD</span>
+                    </button>
+
                     <!-- Settings Button -->
                     <button onclick="openSettingsModal()" title="ตั้งค่าการเชื่อมต่อ API" class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition shadow-sm">
                         <i class="fa-solid fa-sliders text-sm"></i>
@@ -135,29 +141,44 @@
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
         <!-- Banner สถานะคุณภาพอากาศหลัก (Air Quality Status Hero Banner) -->
-        <div id="status-banner" class="rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md text-white bg-gradient-to-r from-emerald-500 to-teal-600 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="flex items-start sm:items-center gap-4">
-                <div id="status-icon-box" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 text-2xl sm:text-3xl text-white shadow-inner">
-                    <i class="fa-solid fa-face-smile"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-xs uppercase tracking-wider font-semibold bg-white/25 px-2.5 py-0.5 rounded-full">สถานะคุณภาพอากาศปัจจุบัน</span>
-                        <span id="device-id-badge" class="text-xs bg-black/20 px-2 py-0.5 rounded-full font-mono">Device: a1</span>
-                        <span id="server-badge" class="text-[11px] bg-sky-900/40 border border-white/20 px-2 py-0.5 rounded-full font-mono text-sky-100 hidden sm:inline-flex items-center gap-1">
-                            <i class="fa-solid fa-server text-[10px]"></i> noco.phukhieo.ac.th
-                        </span>
+        <div id="status-banner" class="rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md text-white bg-gradient-to-r from-sky-500 to-blue-600 flex flex-col justify-between gap-4">
+            <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div class="flex items-start gap-4">
+                    <div id="status-icon-box" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 text-2xl sm:text-3xl text-white shadow-inner">
+                        <i class="fa-solid fa-face-smile"></i>
                     </div>
-                    <h2 id="banner-status-title" class="text-2xl sm:text-3xl font-bold mt-1 tracking-tight">คุณภาพอากาศดีมาก</h2>
-                    <p id="banner-status-desc" class="text-sm sm:text-base text-white/90 mt-0.5 font-light">คุณภาพอากาศอยู่ในเกณฑ์ดีเยี่ยม สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</p>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs uppercase tracking-wider font-semibold bg-white/25 px-2.5 py-0.5 rounded-full">สถานะคุณภาพอากาศ (เกณฑ์มาตรฐาน PCD)</span>
+                            <span id="banner-color-tag" class="text-xs font-bold bg-white text-slate-800 px-2 py-0.5 rounded-full shadow-sm">🔵 สีฟ้า (0 – 15.0 µg/m³)</span>
+                            <span id="device-id-badge" class="text-xs bg-black/20 px-2 py-0.5 rounded-full font-mono">Device: a1</span>
+                        </div>
+                        <h2 id="banner-status-title" class="text-2xl sm:text-3xl font-bold tracking-tight">คุณภาพอากาศดีมาก (Very Good)</h2>
+                        <p id="banner-status-desc" class="text-sm text-white/90 font-light">คุณภาพอากาศดีมาก เหมาะสำหรับกิจกรรมกลางแจ้งและการท่องเที่ยวทุกประเภท</p>
+                    </div>
+                </div>
+                
+                <div class="flex md:flex-col items-center md:items-end justify-between gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-white/20 shrink-0">
+                    <div class="text-left md:text-right">
+                        <p class="text-xs text-white/80">อัปเดตล่าสุดเมื่อ</p>
+                        <p id="last-updated-time" class="text-sm font-semibold tracking-wide mt-0.5">--:--:--</p>
+                        <p id="last-updated-date" class="text-xs text-white/70">--/--/----</p>
+                    </div>
+                    <button onclick="openPcdInfoModal()" class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-xs font-medium text-white transition border border-white/30">
+                        <i class="fa-solid fa-circle-question"></i> เกณฑ์ PCD
+                    </button>
                 </div>
             </div>
-            
-            <div class="flex items-center justify-between md:justify-end gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-white/20">
-                <div class="text-right">
-                    <p class="text-xs text-white/80">อัปเดตล่าสุดเมื่อ</p>
-                    <p id="last-updated-time" class="text-sm font-semibold tracking-wide mt-0.5">--:--:--</p>
-                    <p id="last-updated-date" class="text-xs text-white/70">--/--/----</p>
+
+            <!-- Detailed Advice Box -->
+            <div id="banner-advice-box" class="bg-black/15 rounded-xl p-3 text-xs grid grid-cols-1 md:grid-cols-2 gap-2 border border-white/10">
+                <div class="flex items-start gap-2">
+                    <span class="font-semibold text-white/95 shrink-0"><i class="fa-solid fa-users mr-1"></i>ประชาชนทั่วไป:</span>
+                    <span id="banner-advice-general" class="text-white/90">สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</span>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="font-semibold text-white/95 shrink-0"><i class="fa-solid fa-heart-pulse mr-1"></i>กลุ่มเสี่ยง/ดูแลพิเศษ:</span>
+                    <span id="banner-advice-sensitive" class="text-white/90">สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</span>
                 </div>
             </div>
         </div>
@@ -170,9 +191,9 @@
                 <div class="flex justify-between items-start">
                     <div>
                         <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">ฝุ่นละอองขนาดเล็ก</span>
-                        <h3 class="text-lg font-bold text-slate-800">PM 2.5</h3>
+                        <h3 class="text-lg font-bold text-slate-800">PM 2.5 (PCD)</h3>
                     </div>
-                    <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg">
+                    <div id="card-pm25-icon-box" class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg transition">
                         <i class="fa-solid fa-smog"></i>
                     </div>
                 </div>
@@ -182,23 +203,23 @@
                     <span class="text-sm font-medium text-slate-500">µg/m³</span>
                 </div>
 
-                <!-- Progress indicator for PM2.5 -->
+                <!-- Progress indicator for PM2.5 with PCD scale -->
                 <div class="mt-3">
                     <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                        <div id="pm25-progress-bar" class="h-2 rounded-full bg-emerald-500 transition-all duration-500" style="width: 5%;"></div>
+                        <div id="pm25-progress-bar" class="h-2 rounded-full bg-[#00b0ff] transition-all duration-500" style="width: 5%;"></div>
                     </div>
                     <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
-                        <span>0</span>
-                        <span>15</span>
-                        <span>25</span>
-                        <span>37.5</span>
-                        <span>75+</span>
+                        <span title="ดีมาก (0-15)">0</span>
+                        <span title="ดี (15.1-25)">15.0</span>
+                        <span title="ปานกลาง (25.1-37.5)">25.0</span>
+                        <span title="เริ่มมีผลกระทบ (37.6-75)">37.5</span>
+                        <span title="มีผลกระทบ (>75)">75.0+</span>
                     </div>
                 </div>
 
                 <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span class="text-slate-500">เกณฑ์มาตรฐาน:</span>
-                    <span id="pm25-level-badge" class="px-2 py-0.5 rounded-full font-medium text-emerald-700 bg-emerald-50">อากาศดีมาก</span>
+                    <span class="text-slate-500">เกณฑ์ PCD:</span>
+                    <span id="pm25-level-badge" class="px-2.5 py-0.5 rounded-full font-medium text-sky-700 bg-sky-50 border border-sky-200">ฟ้า: ดีมาก</span>
                 </div>
             </div>
 
@@ -325,44 +346,76 @@
                 <canvas id="airChart"></canvas>
             </div>
 
-            <!-- Standard Indicator Legend Bar -->
+            <!-- Standard Indicator Legend Bar (PCD Standard) -->
             <div class="mt-4 pt-4 border-t border-slate-100">
-                <div class="text-xs font-semibold text-slate-600 mb-2">เกณฑ์มาตรฐานคุณภาพอากาศ PM 2.5 (ประเทศไทย - PCD):</div>
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
-                    <div class="flex items-center gap-2 p-2 rounded-lg bg-sky-50 border border-sky-100">
-                        <span class="w-3 h-3 rounded-full bg-[#00b0ff] shrink-0"></span>
-                        <div>
-                            <p class="font-bold text-sky-900">0 - 15.0</p>
-                            <p class="text-[11px] text-sky-700">ฟ้า: อากาศดีมาก</p>
-                        </div>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    <div class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-layer-group text-sky-600"></i>
+                        เกณฑ์มาตรฐานคุณภาพอากาศ PM 2.5 (กรมควบคุมมลพิษ - PCD / สคพ.3):
                     </div>
-                    <div class="flex items-center gap-2 p-2 rounded-lg bg-emerald-50 border border-emerald-100">
-                        <span class="w-3 h-3 rounded-full bg-[#00e676] shrink-0"></span>
-                        <div>
-                            <p class="font-bold text-emerald-900">15.1 - 25.0</p>
-                            <p class="text-[11px] text-emerald-700">เขียว: อากาศดี</p>
+                    <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-[11px] text-sky-600 hover:text-sky-800 hover:underline flex items-center gap-1">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> ประกาศทางการ สคพ.3
+                    </a>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 text-xs">
+                    <!-- Level 1: Very Good (Blue) -->
+                    <div class="p-3 rounded-xl bg-sky-50 border border-sky-200 hover:shadow-sm transition cursor-pointer" onclick="openPcdInfoModal()">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="inline-flex items-center gap-1.5 font-bold text-sky-900">
+                                <span class="w-3.5 h-3.5 rounded-full bg-[#00b0ff] border border-sky-400"></span>
+                                ฟ้า: ดีมาก
+                            </span>
+                            <span class="text-[10px] font-mono font-bold bg-sky-200/60 text-sky-800 px-1.5 py-0.5 rounded">0 - 15.0</span>
                         </div>
+                        <p class="text-[11px] text-sky-700 leading-tight">คุณภาพอากาศดีมาก เหมาะสำหรับกิจกรรมกลางแจ้งทุกประเภท</p>
                     </div>
-                    <div class="flex items-center gap-2 p-2 rounded-lg bg-yellow-50 border border-yellow-100">
-                        <span class="w-3 h-3 rounded-full bg-[#ffeb3b] shrink-0"></span>
-                        <div>
-                            <p class="font-bold text-yellow-900">25.1 - 37.5</p>
-                            <p class="text-[11px] text-yellow-700">เหลือง: ปานกลาง</p>
+
+                    <!-- Level 2: Good (Green) -->
+                    <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 hover:shadow-sm transition cursor-pointer" onclick="openPcdInfoModal()">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="inline-flex items-center gap-1.5 font-bold text-emerald-900">
+                                <span class="w-3.5 h-3.5 rounded-full bg-[#00e676] border border-emerald-400"></span>
+                                เขียว: ดี
+                            </span>
+                            <span class="text-[10px] font-mono font-bold bg-emerald-200/60 text-emerald-800 px-1.5 py-0.5 rounded">15.1 - 25.0</span>
                         </div>
+                        <p class="text-[11px] text-emerald-700 leading-tight">คุณภาพอากาศดี ทำกิจกรรมกลางแจ้งและท่องเที่ยวได้ตามปกติ</p>
                     </div>
-                    <div class="flex items-center gap-2 p-2 rounded-lg bg-orange-50 border border-orange-100">
-                        <span class="w-3 h-3 rounded-full bg-[#ff9100] shrink-0"></span>
-                        <div>
-                            <p class="font-bold text-orange-900">37.6 - 75.0</p>
-                            <p class="text-[11px] text-orange-700">ส้ม: เริ่มมีผลกระทบ</p>
+
+                    <!-- Level 3: Moderate (Yellow) -->
+                    <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 hover:shadow-sm transition cursor-pointer" onclick="openPcdInfoModal()">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="inline-flex items-center gap-1.5 font-bold text-amber-900">
+                                <span class="w-3.5 h-3.5 rounded-full bg-[#ffeb3b] border border-amber-400"></span>
+                                เหลือง: ปานกลาง
+                            </span>
+                            <span class="text-[10px] font-mono font-bold bg-amber-200/60 text-amber-900 px-1.5 py-0.5 rounded">25.1 - 37.5</span>
                         </div>
+                        <p class="text-[11px] text-amber-800 leading-tight">กลุ่มเสี่ยงควรลดกิจกรรมกลางแจ้ง หากมีอาการไอ/ระคายเคือง</p>
                     </div>
-                    <div class="flex items-center gap-2 p-2 rounded-lg bg-rose-50 border border-rose-100 col-span-2 sm:col-span-1">
-                        <span class="w-3 h-3 rounded-full bg-[#ff1744] shrink-0"></span>
-                        <div>
-                            <p class="font-bold text-rose-900">&gt; 75.0</p>
-                            <p class="text-[11px] text-rose-700">แดง: มีผลกระทบ</p>
+
+                    <!-- Level 4: Unhealthy for Sensitive (Orange) -->
+                    <div class="p-3 rounded-xl bg-orange-50 border border-orange-200 hover:shadow-sm transition cursor-pointer" onclick="openPcdInfoModal()">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="inline-flex items-center gap-1.5 font-bold text-orange-900">
+                                <span class="w-3.5 h-3.5 rounded-full bg-[#ff9100] border border-orange-400"></span>
+                                ส้ม: เริ่มมีผลกระทบ
+                            </span>
+                            <span class="text-[10px] font-mono font-bold bg-orange-200/60 text-orange-900 px-1.5 py-0.5 rounded">37.6 - 75.0</span>
                         </div>
+                        <p class="text-[11px] text-orange-800 leading-tight">ควรลดเวลากลางแจ้ง สวมหน้ากากป้องกันฝุ่นเมื่อออกนอกอาคาร</p>
+                    </div>
+
+                    <!-- Level 5: Hazardous (Red) -->
+                    <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 hover:shadow-sm transition cursor-pointer" onclick="openPcdInfoModal()">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="inline-flex items-center gap-1.5 font-bold text-rose-900">
+                                <span class="w-3.5 h-3.5 rounded-full bg-[#ff1744] border border-rose-400"></span>
+                                แดง: มีผลกระทบ
+                            </span>
+                            <span class="text-[10px] font-mono font-bold bg-rose-200/60 text-rose-900 px-1.5 py-0.5 rounded">&gt; 75.0</span>
+                        </div>
+                        <p class="text-[11px] text-rose-800 leading-tight">ทุกคนควรเลี่ยงกิจกรรมกลางแจ้ง สวมหน้ากาก N95 ทันที</p>
                     </div>
                 </div>
             </div>
@@ -522,6 +575,113 @@
                         บันทึกการตั้งค่า
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PCD Standard Information Modal -->
+    <div id="pcd-info-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 leading-tight">เกณฑ์มาตรฐานคุณภาพอากาศ PM 2.5 ประเทศไทย</h3>
+                        <p class="text-xs text-slate-500">กรมควบคุมมลพิษ (PCD) / สำนักงานสิ่งแวดล้อมและควบคุมมลพิษที่ 3</p>
+                    </div>
+                </div>
+                <button onclick="closePcdInfoModal()" class="text-slate-400 hover:text-slate-600 text-lg p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- PCD 5 Color Table / Cards -->
+            <div class="space-y-2.5 text-xs">
+                <!-- Level 1 -->
+                <div class="p-3 rounded-xl bg-sky-50 border border-sky-200">
+                    <div class="flex items-center justify-between font-bold text-sky-900 mb-1">
+                        <span class="flex items-center gap-1.5 text-sm">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#00b0ff] border border-sky-400"></span>
+                            ระดับที่ 1: สีฟ้า - คุณภาพอากาศดีมาก (Very Good)
+                        </span>
+                        <span class="bg-sky-200/80 text-sky-900 px-2 py-0.5 rounded font-mono font-bold">0 – 15.0 µg/m³</span>
+                    </div>
+                    <div class="text-slate-700 space-y-0.5 pl-5">
+                        <p><strong>👥 ประชาชนทั่วไป:</strong> คุณภาพอากาศดีมาก สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</p>
+                        <p><strong>⚠️ ผู้ที่ต้องดูแลสุขภาพเป็นพิเศษ:</strong> สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</p>
+                    </div>
+                </div>
+
+                <!-- Level 2 -->
+                <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                    <div class="flex items-center justify-between font-bold text-emerald-900 mb-1">
+                        <span class="flex items-center gap-1.5 text-sm">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#00e676] border border-emerald-400"></span>
+                            ระดับที่ 2: สีเขียว - คุณภาพอากาศดี (Good)
+                        </span>
+                        <span class="bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded font-mono font-bold">15.1 – 25.0 µg/m³</span>
+                    </div>
+                    <div class="text-slate-700 space-y-0.5 pl-5">
+                        <p><strong>👥 ประชาชนทั่วไป:</strong> คุณภาพอากาศดี สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</p>
+                        <p><strong>⚠️ ผู้ที่ต้องดูแลสุขภาพเป็นพิเศษ:</strong> สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ</p>
+                    </div>
+                </div>
+
+                <!-- Level 3 -->
+                <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                    <div class="flex items-center justify-between font-bold text-amber-900 mb-1">
+                        <span class="flex items-center gap-1.5 text-sm">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#ffeb3b] border border-amber-400"></span>
+                            ระดับที่ 3: สีเหลือง - คุณภาพอากาศปานกลาง (Moderate)
+                        </span>
+                        <span class="bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded font-mono font-bold">25.1 – 37.5 µg/m³</span>
+                    </div>
+                    <div class="text-slate-700 space-y-0.5 pl-5">
+                        <p><strong>👥 ประชาชนทั่วไป:</strong> สามารถทำกิจกรรมกลางแจ้งได้ตามปกติ</p>
+                        <p><strong>⚠️ ผู้ที่ต้องดูแลสุขภาพเป็นพิเศษ:</strong> หากมีอาการเบื้องต้น เช่น ไอ หายใจลำบาก ระคายเคืองตา ควรลดระยะเวลาการทำกิจกรรมกลางแจ้ง</p>
+                    </div>
+                </div>
+
+                <!-- Level 4 -->
+                <div class="p-3 rounded-xl bg-orange-50 border border-orange-200">
+                    <div class="flex items-center justify-between font-bold text-orange-900 mb-1">
+                        <span class="flex items-center gap-1.5 text-sm">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#ff9100] border border-orange-400"></span>
+                            ระดับที่ 4: สีส้ม - เริ่มมีผลกระทบต่อสุขภาพ (Unhealthy for Sensitive)
+                        </span>
+                        <span class="bg-orange-200/80 text-orange-900 px-2 py-0.5 rounded font-mono font-bold">37.6 – 75.0 µg/m³</span>
+                    </div>
+                    <div class="text-slate-700 space-y-0.5 pl-5">
+                        <p><strong>👥 ประชาชนทั่วไป:</strong> ควรเฝ้าระวังสุขภาพ ถ้ามีอาการเบื้องต้น เช่น ไอ หายใจลำบาก ระคายเคืองตา ควรลดระยะเวลากิจกรรมกลางแจ้ง หรือสวมหน้ากากป้องกันฝุ่น</p>
+                        <p><strong>⚠️ ผู้ที่ต้องดูแลสุขภาพเป็นพิเศษ:</strong> ควรลดระยะเวลาการทำกิจกรรมกลางแจ้ง สวมหน้ากากป้องกันฝุ่น หากมีอาการผิดปกติ (แน่นหน้าอก, หายใจเหนื่อย) ให้รีบปรึกษาแพทย์</p>
+                    </div>
+                </div>
+
+                <!-- Level 5 -->
+                <div class="p-3 rounded-xl bg-rose-50 border border-rose-200">
+                    <div class="flex items-center justify-between font-bold text-rose-900 mb-1">
+                        <span class="flex items-center gap-1.5 text-sm">
+                            <span class="w-3.5 h-3.5 rounded-full bg-[#ff1744] border border-rose-400"></span>
+                            ระดับที่ 5: สีแดง - มีผลกระทบต่อสุขภาพ (Hazardous)
+                        </span>
+                        <span class="bg-rose-200/80 text-rose-900 px-2 py-0.5 rounded font-mono font-bold">&gt; 75.0 µg/m³</span>
+                    </div>
+                    <div class="text-slate-700 space-y-0.5 pl-5">
+                        <p><strong>👥 ประชาชนทั่วไป:</strong> ทุกคนควรหลีกเลี่ยงกิจกรรมกลางแจ้ง หลีกเลี่ยงพื้นที่ที่มีมลพิษทางอากาศสูง สวมหน้ากาก N95 และอยู่ภายในอาคารที่ปิดมิดชิด</p>
+                        <p><strong>⚠️ ผู้ที่ต้องดูแลสุขภาพเป็นพิเศษ:</strong> หลีกเลี่ยงกิจกรรมกลางแจ้งทุกชนิด สวมหน้ากาก N95 หากมีอาการทางสุขภาพควรปรึกษาแพทย์ทันที</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <a href="https://epo03.pcd.go.th/th/news/detail/178650" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:text-sky-800 hover:underline flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> อ้างอิง: สำนักงานสิ่งแวดล้อมและควบคุมมลพิษที่ 3 (พิษณุโลก)
+                </a>
+                <button onclick="closePcdInfoModal()" class="w-full sm:w-auto px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-medium transition">
+                    ปิดหน้าต่าง
+                </button>
             </div>
         </div>
     </div>
@@ -708,63 +868,98 @@
             }
         }
 
-        // Air Quality Assessment logic (Thailand PCD standard)
+        // Air Quality Assessment logic (Thailand PCD standard / กรมควบคุมมลพิษ)
         function getAQIStatus(pm25) {
             const val = parseFloat(pm25) || 0;
             if (val <= 15.0) {
                 return {
-                    label: 'อากาศดีมาก (Very Good)',
+                    colorName: 'ฟ้า',
+                    level: 1,
+                    label: 'คุณภาพอากาศดีมาก (Very Good)',
+                    shortLabel: 'ฟ้า: ดีมาก',
+                    badgeText: '🔵 ฟ้า: ดีมาก (0 – 15.0 µg/m³)',
+                    rangeText: '0 – 15.0 µg/m³',
                     color: 'text-sky-700',
                     bg: 'bg-sky-50',
-                    border: 'border-sky-200',
+                    border: 'border-sky-300',
+                    hex: '#00b0ff',
                     gradient: 'from-sky-500 to-blue-600',
                     icon: 'fa-face-smile',
-                    desc: 'คุณภาพอากาศดีเยี่ยม เหมาะสำหรับกิจกรรมกลางแจ้งและการท่องเที่ยวทุกประเภท',
-                    level: 1
+                    descGeneral: 'คุณภาพอากาศดีมาก สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ',
+                    descSensitive: 'สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ',
+                    desc: 'คุณภาพอากาศดีมาก เหมาะสำหรับกิจกรรมกลางแจ้งและการท่องเที่ยวทุกประเภท'
                 };
             } else if (val <= 25.0) {
                 return {
-                    label: 'อากาศดี (Good)',
+                    colorName: 'เขียว',
+                    level: 2,
+                    label: 'คุณภาพอากาศดี (Good)',
+                    shortLabel: 'เขียว: ดี',
+                    badgeText: '🟢 เขียว: ดี (15.1 – 25.0 µg/m³)',
+                    rangeText: '15.1 – 25.0 µg/m³',
                     color: 'text-emerald-700',
                     bg: 'bg-emerald-50',
-                    border: 'border-emerald-200',
+                    border: 'border-emerald-300',
+                    hex: '#00e676',
                     gradient: 'from-emerald-500 to-teal-600',
                     icon: 'fa-face-smile-beam',
-                    desc: 'คุณภาพอากาศดี สามารถทำกิจกรรมกลางแจ้งได้ตามปกติ',
-                    level: 2
+                    descGeneral: 'คุณภาพอากาศดี สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ',
+                    descSensitive: 'สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ',
+                    desc: 'คุณภาพอากาศดี สามารถทำกิจกรรมกลางแจ้งและการท่องเที่ยวได้ตามปกติ'
                 };
             } else if (val <= 37.5) {
                 return {
-                    label: 'ปานกลาง (Moderate)',
-                    color: 'text-amber-700',
+                    colorName: 'เหลือง',
+                    level: 3,
+                    label: 'คุณภาพอากาศปานกลาง (Moderate)',
+                    shortLabel: 'เหลือง: ปานกลาง',
+                    badgeText: '🟡 เหลือง: ปานกลาง (25.1 – 37.5 µg/m³)',
+                    rangeText: '25.1 – 37.5 µg/m³',
+                    color: 'text-amber-800',
                     bg: 'bg-amber-50',
-                    border: 'border-amber-200',
+                    border: 'border-amber-300',
+                    hex: '#ffeb3b',
                     gradient: 'from-amber-500 to-yellow-600',
                     icon: 'fa-face-meh',
-                    desc: 'ประชาชนทั่วไปทำกิจกรรมได้ตามปกติ ผู้ป่วยกลุ่มเสี่ยงควรสังเกตอาการตนเอง',
-                    level: 3
+                    descGeneral: 'ประชาชนทั่วไปสามารถทำกิจกรรมกลางแจ้งได้ตามปกติ',
+                    descSensitive: 'หากมีอาการเบื้องต้น (ไอ, หายใจลำบาก, ระคายเคืองตา) ควรลดระยะเวลากิจกรรมกลางแจ้ง',
+                    desc: 'ประชาชนทั่วไปทำกิจกรรมได้ตามปกติ กลุ่มเสี่ยงควรสังเกตอาการและลดเวลากิจกรรมกลางแจ้ง'
                 };
             } else if (val <= 75.0) {
                 return {
-                    label: 'เริ่มมีผลกระทบต่อสุขภาพ (Unhealthy for sensitive groups)',
-                    color: 'text-orange-700',
+                    colorName: 'ส้ม',
+                    level: 4,
+                    label: 'เริ่มมีผลกระทบต่อสุขภาพ (Unhealthy for Sensitive)',
+                    shortLabel: 'ส้ม: เริ่มมีผลกระทบ',
+                    badgeText: '🟠 ส้ม: เริ่มมีผลกระทบ (37.6 – 75.0 µg/m³)',
+                    rangeText: '37.6 – 75.0 µg/m³',
+                    color: 'text-orange-800',
                     bg: 'bg-orange-50',
-                    border: 'border-orange-200',
+                    border: 'border-orange-300',
+                    hex: '#ff9100',
                     gradient: 'from-orange-500 to-amber-600',
                     icon: 'fa-face-frown',
-                    desc: 'ควรลดระยะเวลาการทำกิจกรรมกลางแจ้ง สวมหน้ากากป้องกันฝุ่นเมื่อออกนอกอาคาร',
-                    level: 4
+                    descGeneral: 'ควรเฝ้าระวังสุขภาพ ถ้ามีอาการเบื้องต้นควรลดเวลากิจกรรมกลางแจ้ง หรือสวมหน้ากากป้องกันฝุ่น',
+                    descSensitive: 'ควรลดระยะเวลากิจกรรมกลางแจ้ง สวมหน้ากากป้องกันฝุ่น หากมีอาการผิดปกติให้รีบปรึกษาแพทย์',
+                    desc: 'ควรลดระยะเวลาการทำกิจกรรมกลางแจ้ง สวมหน้ากากป้องกันฝุ่นเมื่อออกนอกอาคาร'
                 };
             } else {
                 return {
+                    colorName: 'แดง',
+                    level: 5,
                     label: 'มีผลกระทบต่อสุขภาพ (Hazardous)',
-                    color: 'text-rose-700',
+                    shortLabel: 'แดง: มีผลกระทบ',
+                    badgeText: '🔴 แดง: มีผลกระทบ (> 75.0 µg/m³)',
+                    rangeText: '75.1 µg/m³ ขึ้นไป',
+                    color: 'text-rose-800',
                     bg: 'bg-rose-50',
-                    border: 'border-rose-200',
+                    border: 'border-rose-300',
+                    hex: '#ff1744',
                     gradient: 'from-rose-600 to-red-700',
                     icon: 'fa-face-dizzy',
-                    desc: 'ทุกคนควรหลีกเลี่ยงกิจกรรมกลางแจ้ง สวมหน้ากาก N95 และอยู่ภายในอาคารที่ปิดมิดชิด',
-                    level: 5
+                    descGeneral: 'ทุกคนควรหลีกเลี่ยงกิจกรรมกลางแจ้ง หลีกเลี่ยงพื้นที่มลพิษสูง สวมหน้ากาก N95',
+                    descSensitive: 'หลีกเลี่ยงกิจกรรมกลางแจ้งทุกชนิด สวมหน้ากาก N95 หากมีอาการทางสุขภาพควรปรึกษาแพทย์ทันที',
+                    desc: 'ทุกคนควรหลีกเลี่ยงกิจกรรมกลางแจ้ง หลีกเลี่ยงพื้นที่มลพิษสูง และสวมหน้ากาก N95 ทันที'
                 };
             }
         }
@@ -912,10 +1107,20 @@
 
             // 1. Update Banner
             const banner = document.getElementById('status-banner');
-            banner.className = `rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md text-white bg-gradient-to-r ${aqi.gradient} flex flex-col md:flex-row md:items-center justify-between gap-4`;
+            banner.className = `rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-md text-white bg-gradient-to-r ${aqi.gradient} flex flex-col justify-between gap-4`;
             
-            document.getElementById('banner-status-title').innerText = aqi.label.split('(')[0].trim();
+            document.getElementById('banner-status-title').innerText = aqi.label;
             document.getElementById('banner-status-desc').innerText = aqi.desc;
+            
+            const colorTag = document.getElementById('banner-color-tag');
+            if (colorTag) colorTag.innerText = aqi.badgeText;
+            
+            const advGeneral = document.getElementById('banner-advice-general');
+            if (advGeneral) advGeneral.innerText = aqi.descGeneral;
+            
+            const advSensitive = document.getElementById('banner-advice-sensitive');
+            if (advSensitive) advSensitive.innerText = aqi.descSensitive;
+
             document.getElementById('status-icon-box').innerHTML = `<i class="fa-solid ${aqi.icon}"></i>`;
             document.getElementById('device-id-badge').innerText = `Device: ${latest.deviceId}`;
             document.getElementById('last-updated-time').innerText = latest.timeFormatted || '--:--:--';
@@ -938,8 +1143,8 @@
             else pmProgressBar.className = 'h-2 rounded-full bg-[#ff1744] transition-all duration-500';
 
             const badge = document.getElementById('pm25-level-badge');
-            badge.innerText = aqi.label.split('(')[0].trim();
-            badge.className = `px-2 py-0.5 rounded-full font-medium ${aqi.color} ${aqi.bg}`;
+            badge.innerText = aqi.shortLabel;
+            badge.className = `px-2.5 py-0.5 rounded-full font-medium ${aqi.color} ${aqi.bg} border ${aqi.border}`;
 
             // Gas Progress bar (scale 0-1000)
             const gasPercent = Math.min(100, Math.max(5, (latest.gas / 1000) * 100));
@@ -1096,8 +1301,8 @@
                         </td>
                         <td class="py-3 px-4">
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${aqi.bg} ${aqi.color} border ${aqi.border}">
-                                <i class="fa-solid ${aqi.icon}"></i>
-                                ${aqi.label.split('(')[0].trim()}
+                                <span class="w-2 h-2 rounded-full" style="background-color: ${aqi.hex};"></span>
+                                ${aqi.shortLabel}
                             </span>
                         </td>
                     </tr>
@@ -1206,6 +1411,15 @@
             countdownValue = Math.floor(config.refreshInterval / 1000);
             const timerElem = document.getElementById('refresh-timer');
             if (timerElem) timerElem.innerText = config.refreshInterval > 0 ? `${countdownValue}s` : 'Off';
+        }
+
+        // PCD Info Modal Handlers
+        function openPcdInfoModal() {
+            document.getElementById('pcd-info-modal').classList.remove('hidden');
+        }
+
+        function closePcdInfoModal() {
+            document.getElementById('pcd-info-modal').classList.add('hidden');
         }
 
         // Settings Modal Handlers
