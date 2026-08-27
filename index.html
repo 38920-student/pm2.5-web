@@ -334,6 +334,15 @@
                         <button onclick="setChartSeries('gas')" id="btn-chart-gas" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">ก๊าซ</button>
                     </div>
 
+                    <!-- Points Selector -->
+                    <select id="chart-points-select" onchange="changeChartPoints(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
+                        <option value="15">15 จุดล่าสุด</option>
+                        <option value="25" selected>25 จุดล่าสุด</option>
+                        <option value="50">50 จุดล่าสุด</option>
+                        <option value="100">100 จุดล่าสุด</option>
+                        <option value="all">แสดงทั้งหมดของวัน</option>
+                    </select>
+
                     <!-- Quick Date Dropdown -->
                     <select id="chart-date-select" onchange="changeChartDate(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
                         <!-- Populated dynamically from available dates in DB -->
@@ -1305,6 +1314,12 @@
         }
 
         let selectedChartDate = ''; // Target date string YYYY-MM-DD for daily chart
+        let chartPointsLimit = 25; // 15, 25, 50, 100, or 'all'
+
+        function changeChartPoints(limit) {
+            chartPointsLimit = (limit === 'all') ? 'all' : parseInt(limit, 10);
+            updateChartData(allRecords);
+        }
 
         // Helper to extract YYYY-MM-DD from record
         function getRecordDateString(r) {
@@ -1377,7 +1392,7 @@
             updateChartData(allRecords);
         }
 
-        // Update Chart for Selected Day
+        // Update Chart for Selected Day and Selected Points Limit
         function updateChartData(records) {
             if (!chartInstance || !records || records.length === 0) return;
 
@@ -1388,10 +1403,17 @@
             const targetDate = selectedChartDate || getRecordDateString(records[0]);
             const dayRecords = records.filter(r => getRecordDateString(r) === targetDate);
 
-            // If records for selected day exist, use them; otherwise fallback to recent
-            const displayRecords = dayRecords.length > 0 ? dayRecords : records.slice(0, 50);
+            // Base pool of records for that day (or fallback)
+            const baseRecords = dayRecords.length > 0 ? dayRecords : records;
 
-            // Sort chronologically (oldest to newest throughout the day)
+            // Apply points limit
+            let displayRecords = baseRecords;
+            if (chartPointsLimit !== 'all') {
+                const limitNum = typeof chartPointsLimit === 'number' ? chartPointsLimit : 25;
+                displayRecords = baseRecords.slice(0, limitNum);
+            }
+
+            // Sort chronologically (oldest to newest throughout the time period)
             const chartRecords = [...displayRecords].reverse();
 
             const labels = chartRecords.map(r => r.timeFormatted || r.rawTime);
@@ -1415,10 +1437,19 @@
 
             // Update day info badge
             const chartSub = document.getElementById('chart-day-info');
-            if (chartSub && dayRecords.length > 0) {
-                const dateObj = getRecordDate(dayRecords[0].rawTime);
-                const thaiDate = dateObj ? dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
-                chartSub.innerHTML = `<span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-sky-200"><i class="fa-solid fa-calendar-day text-sky-500"></i> ${thaiDate} (${dayRecords.length} จุด)</span>`;
+            if (chartSub) {
+                if (dayRecords.length > 0) {
+                    const dateObj = getRecordDate(dayRecords[0].rawTime);
+                    const thaiDate = dateObj ? dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
+                    const pointText = (chartPointsLimit === 'all' || displayRecords.length === dayRecords.length) 
+                        ? `${dayRecords.length} จุด` 
+                        : `${displayRecords.length} จาก ${dayRecords.length} จุด`;
+                    chartSub.innerHTML = `<span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-sky-200"><i class="fa-solid fa-calendar-day text-sky-500"></i> ${thaiDate} (${pointText})</span>`;
+                } else {
+                    const customDateObj = parseInputDate(targetDate, false);
+                    const thaiDate = customDateObj ? customDateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
+                    chartSub.innerHTML = `<span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-amber-200"><i class="fa-solid fa-triangle-exclamation text-amber-500"></i> ไม่พบข้อมูลวันที่ ${thaiDate}</span>`;
+                }
             }
 
             // Handle series visibility
