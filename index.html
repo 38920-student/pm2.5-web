@@ -331,20 +331,18 @@
                         <button onclick="setChartSeries('gas')" id="btn-chart-gas" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">ก๊าซ</button>
                     </div>
 
-                    <!-- Limit Selector -->
-                    <select onchange="changeDataLimit(this.value)" class="data-limit-select text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
-                        <option value="25">25 รายการ</option>
-                        <option value="50">50 รายการ</option>
-                        <option value="100" selected>100 รายการ</option>
-                        <option value="250">250 รายการ</option>
-                        <option value="500">500 รายการ</option>
-                        <option value="1000">1,000 รายการ</option>
+                    <!-- Chart Points Selector -->
+                    <select id="chart-points-select" onchange="changeChartPoints(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
+                        <option value="15">15 จุดล่าสุด (มือถือ)</option>
+                        <option value="25" selected>25 จุดล่าสุด</option>
+                        <option value="50">50 จุดล่าสุด</option>
+                        <option value="100">100 จุดล่าสุด</option>
                     </select>
                 </div>
             </div>
 
-            <!-- Chart Canvas -->
-            <div class="mt-4 relative" style="height: 340px;">
+            <!-- Chart Canvas with Responsive Mobile Height -->
+            <div class="mt-4 relative h-[260px] sm:h-[340px]">
                 <canvas id="airChart"></canvas>
             </div>
 
@@ -1300,12 +1298,22 @@
             filterTableData(false);
         }
 
+        let chartPointsLimit = 25;
+
+        function changeChartPoints(limit) {
+            chartPointsLimit = parseInt(limit, 10);
+            updateChartData(allRecords);
+        }
+
         // Update Chart
         function updateChartData(records) {
-            if (!chartInstance) return;
+            if (!chartInstance || !records || records.length === 0) return;
 
-            // Records are sorted desc, reverse for chronological chart
-            const chartRecords = [...records].reverse();
+            const isMobile = window.innerWidth < 640;
+            // Limit points displayed on chart to prevent crowded points on mobile screens
+            const limit = chartPointsLimit || (isMobile ? 20 : 30);
+            const chartRecords = records.slice(0, limit).reverse();
+
             const labels = chartRecords.map(r => r.timeFormatted || r.rawTime);
             const pmData = chartRecords.map(r => r.pm25);
             const gasData = chartRecords.map(r => r.gas);
@@ -1313,6 +1321,17 @@
             chartInstance.data.labels = labels;
             chartInstance.data.datasets[0].data = pmData;
             chartInstance.data.datasets[1].data = gasData;
+
+            // Optimize point radius for clean mobile viewing
+            const pRadius = chartRecords.length > 30 ? 1.5 : (isMobile ? 2 : 3);
+            chartInstance.data.datasets[0].pointRadius = pRadius;
+            chartInstance.data.datasets[1].pointRadius = pRadius;
+
+            // X-axis tick limits for clean spacing on mobile
+            if (chartInstance.options.scales.x) {
+                chartInstance.options.scales.x.ticks.maxTicksLimit = isMobile ? 5 : 10;
+                chartInstance.options.scales.x.ticks.maxRotation = isMobile ? 0 : 35;
+            }
 
             // Handle series visibility
             if (activeChartSeries === 'pm25') {
