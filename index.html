@@ -327,14 +327,14 @@
 
                 <!-- Chart Controls -->
                 <div class="flex flex-wrap items-center gap-2">
-                    <!-- Toggle Series -->
+                    <!-- 1. Toggle Series (Left) -->
                     <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100 text-xs">
                         <button onclick="setChartSeries('all')" id="btn-chart-all" class="px-2.5 py-1 rounded-md font-medium bg-white text-slate-800 shadow-sm">ทั้งหมด</button>
                         <button onclick="setChartSeries('pm25')" id="btn-chart-pm25" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">PM 2.5</button>
                         <button onclick="setChartSeries('gas')" id="btn-chart-gas" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">ก๊าซ</button>
                     </div>
 
-                    <!-- Points Selector -->
+                    <!-- 2. Points Selector (Middle) -->
                     <select id="chart-points-select" onchange="changeChartPoints(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
                         <option value="15">15 จุดล่าสุด</option>
                         <option value="25" selected>25 จุดล่าสุด</option>
@@ -343,12 +343,7 @@
                         <option value="all">แสดงทั้งหมดของวัน</option>
                     </select>
 
-                    <!-- Quick Date Dropdown -->
-                    <select id="chart-date-select" onchange="changeChartDate(this.value)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 font-medium hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm cursor-pointer">
-                        <!-- Populated dynamically from available dates in DB -->
-                    </select>
-
-                    <!-- Calendar Date Picker -->
+                    <!-- 3. Calendar Date Picker (Right) -->
                     <div class="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs shadow-sm hover:bg-slate-50">
                         <i class="fa-regular fa-calendar text-sky-600"></i>
                         <input type="date" id="chart-date-picker" onchange="changeChartDate(this.value)" title="เลือกดูตามปฏิทิน" class="bg-transparent text-slate-800 font-medium focus:outline-none cursor-pointer text-xs">
@@ -1331,56 +1326,17 @@
             return `${y}-${m}-${d}`;
         }
 
-        // Dynamically populate the date dropdown on Trends card
-        function populateChartDateOptions() {
-            const selectElem = document.getElementById('chart-date-select');
+        // Ensure chart date picker is initialized to the active date
+        function initChartDatePicker() {
             const pickerElem = document.getElementById('chart-date-picker');
             if (!allRecords || allRecords.length === 0) return;
 
-            // Extract distinct dates from allRecords
-            const dateMap = new Map();
-            allRecords.forEach(r => {
-                const dateKey = getRecordDateString(r);
-                if (dateKey && !dateMap.has(dateKey)) {
-                    const dateObj = getRecordDate(r.rawTime);
-                    const thaiLabel = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
-                    dateMap.set(dateKey, thaiLabel);
-                }
-            });
-
-            const sortedDates = Array.from(dateMap.keys()).sort().reverse();
-            if (sortedDates.length === 0) return;
-
-            // If selectedChartDate is not set or not in list, default to newest date
-            if (!selectedChartDate || !dateMap.has(selectedChartDate)) {
-                selectedChartDate = sortedDates[0];
+            if (!selectedChartDate) {
+                selectedChartDate = getRecordDateString(allRecords[0]);
             }
 
             if (pickerElem && !pickerElem.value) {
                 pickerElem.value = selectedChartDate;
-            }
-
-            if (selectElem) {
-                const todayKey = new Date().toISOString().slice(0, 10);
-                let html = '';
-                let hasSelectedInDropdown = false;
-                sortedDates.forEach(dateKey => {
-                    const label = dateMap.get(dateKey);
-                    const isToday = (dateKey === todayKey || dateKey === sortedDates[0]);
-                    const displayLabel = isToday ? `📅 วันนี้ (${label})` : `📅 ${label}`;
-                    const isSelected = (dateKey === selectedChartDate);
-                    if (isSelected) hasSelectedInDropdown = true;
-                    html += `<option value="${dateKey}" ${isSelected ? 'selected' : ''}>${displayLabel}</option>`;
-                });
-
-                // If user selected a custom date not in list, prepend it to dropdown
-                if (!hasSelectedInDropdown && selectedChartDate) {
-                    const customDateObj = parseInputDate(selectedChartDate, false);
-                    const customLabel = customDateObj ? customDateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : selectedChartDate;
-                    html = `<option value="${selectedChartDate}" selected>📅 ${customLabel} (เลือกจากปฏิทิน)</option>` + html;
-                }
-
-                selectElem.innerHTML = html;
             }
         }
 
@@ -1396,8 +1352,8 @@
         function updateChartData(records) {
             if (!chartInstance || !records || records.length === 0) return;
 
-            // Ensure date dropdown options are populated
-            populateChartDateOptions();
+            // Ensure chart date picker is initialized
+            initChartDatePicker();
 
             // Filter records for the selected day
             const targetDate = selectedChartDate || getRecordDateString(records[0]);
