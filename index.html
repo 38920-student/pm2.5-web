@@ -483,38 +483,41 @@
                 </div>
             </div>
 
-            <!-- Filter Controls -->
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs">
-                <div>
-                    <label class="block text-slate-600 font-medium mb-1">ค้นหา (ID / ค่าฝุ่น / สถานะ)</label>
-                    <div class="relative">
-                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400"></i>
-                        <input type="text" id="search-input" onkeyup="filterTableData(true)" placeholder="พิมพ์ค้นหา เช่น 2.5, ดีมาก, a1..." class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+            <!-- Filter Controls with Dedicated Search Button -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                    <div>
+                        <label class="block text-slate-600 font-medium mb-1">ค้นหาคำ / ID / สถานะ</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400"></i>
+                            <input type="text" id="search-input" onkeydown="if(event.key==='Enter') performHistorySearch()" placeholder="พิมพ์ค้นหา เช่น 2.5, ดีมาก, a1..." class="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-slate-600 font-medium mb-1">ตั้งแต่วันที่</label>
+                        <input type="date" id="filter-start-date" onkeydown="if(event.key==='Enter') performHistorySearch()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-600 font-medium mb-1">ถึงวันที่</label>
+                        <input type="date" id="filter-end-date" onkeydown="if(event.key==='Enter') performHistorySearch()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="performHistorySearch()" id="btn-history-search" class="w-full py-2 px-4 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span>ค้นหาข้อมูล</span>
+                        </button>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="resetFilters()" class="w-full py-2 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-arrow-rotate-left"></i>
+                            <span>ล้างค่า / ค่าล่าสุด</span>
+                        </button>
                     </div>
                 </div>
-                <div>
-                    <label class="block text-slate-600 font-medium mb-1">ตั้งแต่วันที่</label>
-                    <input type="date" id="filter-start-date" onchange="filterTableData(true)" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                </div>
-                <div>
-                    <label class="block text-slate-600 font-medium mb-1">ถึงวันที่</label>
-                    <input type="date" id="filter-end-date" onchange="filterTableData(true)" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                </div>
-                <div>
-                    <label class="block text-slate-600 font-medium mb-1">จำนวนข้อมูลที่ดึง</label>
-                    <select id="data-limit-select" onchange="changeDataLimit(this.value)" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium cursor-pointer">
-                        <option value="25">25 รายการล่าสุด</option>
-                        <option value="50">50 รายการล่าสุด</option>
-                        <option value="100" selected>100 รายการล่าสุด</option>
-                        <option value="250">250 รายการล่าสุด</option>
-                        <option value="500">500 รายการล่าสุด</option>
-                        <option value="1000">1,000 รายการล่าสุด</option>
-                    </select>
-                </div>
-                <div class="flex items-end">
-                    <button onclick="resetFilters()" class="w-full py-1.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-arrow-rotate-left"></i> ล้างตัวกรอง
-                    </button>
+
+                <!-- Search Status Feedback Bar -->
+                <div id="history-search-status" class="hidden p-2.5 rounded-lg text-xs font-medium bg-sky-50 text-sky-800 border border-sky-200">
+                    <!-- Populated dynamically -->
                 </div>
             </div>
 
@@ -1460,6 +1463,121 @@
             document.getElementById('pagination-controls').innerHTML = pageHtml;
         }
 
+        // Search & Filter History Records (Direct API Query for dates)
+        async function performHistorySearch() {
+            const query = (document.getElementById('search-input')?.value || '').trim();
+            const startDateStr = document.getElementById('filter-start-date')?.value;
+            const endDateStr = document.getElementById('filter-end-date')?.value;
+            const searchBtn = document.getElementById('btn-history-search');
+            const searchStatus = document.getElementById('history-search-status');
+
+            // If date range is specified, query NocoDB API directly to fetch historical records up to 1000 items
+            if (startDateStr || endDateStr) {
+                if (searchBtn) {
+                    searchBtn.disabled = true;
+                    searchBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> กำลังค้นหา...';
+                }
+                if (searchStatus) {
+                    searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-sky-50 text-sky-800 border border-sky-200 block';
+                    searchStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sky-600 mr-1.5"></i> กำลังค้นหาข้อมูลจากฐานข้อมูล NocoDB ตามช่วงวันที่ที่ระบุ...';
+                }
+
+                try {
+                    let whereParam = '';
+                    const startObj = parseInputDate(startDateStr, false);
+                    const endObj = parseInputDate(endDateStr, true);
+
+                    const conds = [];
+                    if (startObj) {
+                        const sUTC = startObj.toISOString().replace('T', ' ').slice(0, 19);
+                        conds.push(`(Timestamp,ge,${sUTC})`);
+                    }
+                    if (endObj) {
+                        const eUTC = endObj.toISOString().replace('T', ' ').slice(0, 19);
+                        conds.push(`(Timestamp,le,${eUTC})`);
+                    }
+
+                    if (conds.length > 0) {
+                        whereParam = `&where=${encodeURIComponent(conds.join('~and'))}`;
+                    }
+
+                    const searchUrl = `${config.baseUrl}/api/v2/tables/${config.tableId}/records?limit=1000&sort=-Id${whereParam}`;
+                    const res = await fetch(searchUrl, {
+                        method: 'GET',
+                        headers: {
+                            'accept': 'application/json',
+                            'xc-token': config.token
+                        }
+                    });
+
+                    if (res.ok) {
+                        const resData = await res.json();
+                        const rawList = resData.list || [];
+                        
+                        allRecords = rawList.map(item => {
+                            const pm25 = parseFloat(item['PM 2.5 Value'] ?? item.pm25 ?? item['PM2.5'] ?? 0);
+                            const gas = parseFloat(item['Gas Value'] ?? item.gas ?? item['Gas'] ?? 0);
+                            const gasType = item['Gas Type'] ?? item.gas_type ?? 'co';
+                            const deviceId = item['Device ID'] ?? item.device_id ?? 'a1';
+                            const rawTime = item.Timestamp || item.CreatedAt || item.created_at || '';
+                            const dt = formatDateTime(rawTime);
+                            const aqi = getAQIStatus(pm25);
+
+                            return {
+                                id: item.Id,
+                                deviceId,
+                                pm25: isNaN(pm25) ? 0 : pm25,
+                                gas: isNaN(gas) ? 0 : gas,
+                                gasType,
+                                rawTime,
+                                timeFormatted: dt.timeStr,
+                                dateFormatted: dt.dateStr,
+                                fullFormatted: dt.full,
+                                aqiLabel: aqi.label,
+                                aqiShortLabel: aqi.shortLabel,
+                                aqiColorName: aqi.colorName
+                            };
+                        });
+
+                        currentPage = 1;
+                        filterTableData(true);
+
+                        if (searchStatus) {
+                            if (filteredRecords.length > 0) {
+                                searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+                                searchStatus.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> พบข้อมูล <strong>${filteredRecords.length}</strong> รายการ จากการค้นหาวันที่ <strong>${startDateStr || 'เริ่มต้น'}</strong> ถึง <strong>${endDateStr || 'ปัจจุบัน'}</strong>`;
+                            } else {
+                                searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200 block';
+                                searchStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1.5"></i> ไม่พบข้อมูลในช่วงวันที่ <strong>${startDateStr || 'เริ่มต้น'}</strong> ถึง <strong>${endDateStr || 'ปัจจุบัน'}</strong> ในฐานข้อมูล`;
+                            }
+                        }
+                    } else {
+                        filterTableData(true);
+                    }
+                } catch (err) {
+                    console.error("Search error:", err);
+                    filterTableData(true);
+                } finally {
+                    if (searchBtn) {
+                        searchBtn.disabled = false;
+                        searchBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1.5"></i> ค้นหาข้อมูล';
+                    }
+                }
+            } else {
+                // Text-only search in memory
+                currentPage = 1;
+                filterTableData(true);
+                if (searchStatus) {
+                    if (query) {
+                        searchStatus.className = 'p-2.5 rounded-lg text-xs font-medium bg-sky-50 text-sky-800 border border-sky-200 block';
+                        searchStatus.innerHTML = `<i class="fa-solid fa-circle-check text-sky-600 mr-1.5"></i> ผลการค้นหา "${query}": พบ <strong>${filteredRecords.length}</strong> รายการ`;
+                    } else {
+                        searchStatus.className = 'hidden';
+                    }
+                }
+            }
+        }
+
         function changePage(page) {
             const totalPages = Math.ceil(filteredRecords.length / rowsPerPage);
             if (page < 1 || page > totalPages) return;
@@ -1471,7 +1589,9 @@
             document.getElementById('search-input').value = '';
             document.getElementById('filter-start-date').value = '';
             document.getElementById('filter-end-date').value = '';
-            filterTableData(true);
+            const searchStatus = document.getElementById('history-search-status');
+            if (searchStatus) searchStatus.className = 'hidden';
+            fetchAirData(true);
         }
 
         // Export data to CSV file
