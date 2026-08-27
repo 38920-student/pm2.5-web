@@ -75,7 +75,7 @@ headers = {
 # 🔴 ระดับ 5 (สีแดง): 75.1 µg/m³ ขึ้นไป  -> มีผลกระทบต่อสุขภาพ (Hazardous)
 
 TELEGRAM_BOT_TOKEN = "8974699444:AAHoVIXSNMiBa9h-PB1iyrQdlbBtPyOUJ2s"
-TELEGRAM_CHAT_ID = "7903084332"
+TELEGRAM_CHAT_ID = "1004468680301"
 PM25_ALERT_THRESHOLD = 75.0                     # เกณฑ์แจ้งเตือน PM 2.5 (> 75.0 µg/m³ = ระดับสีแดง มีผลกระทบต่อสุขภาพ)
 ALERT_COOLDOWN_SECONDS = 300                    # ระยะเวลาหน่วงการส่งแจ้งเตือนซ้ำ (300 วินาที = 5 นาที) เพื่อไม่ให้ส่งถี่เกินไป
 last_alert_time = 0
