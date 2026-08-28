@@ -848,6 +848,28 @@
             version: "2.5"
         };
 
+        // Timezone: all timestamps are stored in UTC by the ESP32 firmware and
+        // always displayed / grouped / filtered in Thailand time (Asia/Bangkok,
+        // fixed UTC+7, no DST) regardless of the viewer's device timezone.
+        const APP_TIMEZONE = "Asia/Bangkok";
+        const APP_TZ_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+        // YYYY-MM-DD for a given instant, in Thailand time
+        function getBangkokDateString(date) {
+            if (!date || isNaN(date.getTime())) return '';
+            return new Intl.DateTimeFormat('en-CA', {
+                timeZone: APP_TIMEZONE,
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            }).format(date);
+        }
+
+        // Instant at the start (or end) of a Thailand calendar day (y, m=0-11, d)
+        function bangkokDayBoundary(y, m, d, isEndOfDay = false) {
+            return isEndOfDay
+                ? new Date(Date.UTC(y, m, d, 23, 59, 59, 999) - APP_TZ_OFFSET_MS)
+                : new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - APP_TZ_OFFSET_MS);
+        }
+
         // App State
         let config = { ...DEFAULT_CONFIG };
         let allRecords = [];
@@ -1035,13 +1057,12 @@
             });
         }
 
-        // Parse "YYYY-MM-DD" or Thai Buddhist date strings into local Date
+        // Parse "YYYY-MM-DD" or Thai Buddhist date strings into the instant at the
+        // start/end of that Thailand calendar day (Asia/Bangkok).
         function parseInputDate(dateStr, isEndOfDay = false) {
             if (!dateStr) return null;
             if (dateStr instanceof Date) {
-                return isEndOfDay 
-                    ? new Date(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate(), 23, 59, 59, 999) 
-                    : new Date(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate(), 0, 0, 0, 0);
+                return bangkokDayBoundary(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate(), isEndOfDay);
             }
             const str = String(dateStr).trim();
             // 1. Check YYYY-MM-DD
@@ -1053,7 +1074,7 @@
                     const d = parseInt(parts[2], 10);
                     if (y > 2400) y -= 543; // convert Thai Buddhist year if present
                     if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
-                        return isEndOfDay ? new Date(y, m, d, 23, 59, 59, 999) : new Date(y, m, d, 0, 0, 0, 0);
+                        return bangkokDayBoundary(y, m, d, isEndOfDay);
                     }
                 }
             }
@@ -1067,7 +1088,7 @@
                     let y = parseInt(parts[2], 10);
                     if (y > 2400) y -= 543;
                     if (!isNaN(d) && monthIndex !== -1 && !isNaN(y)) {
-                        return isEndOfDay ? new Date(y, monthIndex, d, 23, 59, 59, 999) : new Date(y, monthIndex, d, 0, 0, 0, 0);
+                        return bangkokDayBoundary(y, monthIndex, d, isEndOfDay);
                     }
                 }
             }
@@ -1080,7 +1101,7 @@
                     let y = parseInt(parts[2], 10);
                     if (y > 2400) y -= 543;
                     if (!isNaN(d) && !isNaN(m) && !isNaN(y)) {
-                        return isEndOfDay ? new Date(y, m, d, 23, 59, 59, 999) : new Date(y, m, d, 0, 0, 0, 0);
+                        return bangkokDayBoundary(y, m, d, isEndOfDay);
                     }
                 }
             }
@@ -1109,9 +1130,9 @@
                 const date = getRecordDate(isoString);
                 if (!date) return { dateStr: isoString, timeStr: '', full: isoString };
                 
-                // Format in Thai locale
-                const timeStr = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const dateStr = date.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                // Format in Thai locale, pinned to Thailand time (Asia/Bangkok)
+                const timeStr = date.toLocaleTimeString('th-TH', { timeZone: APP_TIMEZONE, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const dateStr = date.toLocaleDateString('th-TH', { timeZone: APP_TIMEZONE, year: 'numeric', month: 'short', day: 'numeric' });
                 return {
                     dateStr,
                     timeStr,
@@ -1521,25 +1542,22 @@
             if (chartSub) {
                 if (totalCount > 0) {
                     const dateObj = (currentDayRecords[0] ? getRecordDate(currentDayRecords[0].rawTime) : null) || parseInputDate(targetDate, false);
-                    const thaiDate = dateObj ? dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
+                    const thaiDate = dateObj ? dateObj.toLocaleDateString('th-TH', { timeZone: APP_TIMEZONE, year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
                     const pointText = (visibleCount >= totalCount) ? `${totalCount} จุด (ทั้งหมด)` : `${visibleCount} จาก ${totalCount} จุด`;
                     chartSub.innerHTML = `<span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-sky-200"><i class="fa-solid fa-calendar-day text-sky-500"></i> ${thaiDate} (${pointText})</span>`;
                 } else {
                     const customDateObj = parseInputDate(targetDate, false);
-                    const thaiDate = customDateObj ? customDateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
+                    const thaiDate = customDateObj ? customDateObj.toLocaleDateString('th-TH', { timeZone: APP_TIMEZONE, year: 'numeric', month: 'short', day: 'numeric' }) : targetDate;
                     chartSub.innerHTML = `<span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-xs font-medium border border-amber-200"><i class="fa-solid fa-triangle-exclamation text-amber-500"></i> ไม่พบข้อมูลวันที่ ${thaiDate}</span>`;
                 }
             }
         }
 
-        // Helper to extract YYYY-MM-DD from record
+        // Helper to extract YYYY-MM-DD from record (Thailand calendar day)
         function getRecordDateString(r) {
             const dateObj = getRecordDate(r.rawTime);
             if (!dateObj) return '';
-            const y = dateObj.getFullYear();
-            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const d = String(dateObj.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
+            return getBangkokDateString(dateObj);
         }
 
         let fpChartDatePicker = null;
@@ -2162,7 +2180,7 @@
                 `📊 <b>PM 2.5:</b> <code>${Number(pm25).toFixed(2)} µg/m³</code>\n` +
                 `💨 <b>ก๊าซ (${allRecords[0]?.gasType || 'CO'}):</b> <code>${Number(gas).toFixed(2)} PPM</code>\n` +
                 `📍 <b>อุปกรณ์:</b> <code>${deviceId || 'a1'}</code>\n` +
-                `🕒 <b>เวลาบันทึก:</b> <code>${fullFormatted || new Date().toLocaleString('th-TH')}</code>\n` +
+                `🕒 <b>เวลาบันทึก:</b> <code>${fullFormatted || new Date().toLocaleString('th-TH', { timeZone: APP_TIMEZONE })}</code>\n` +
                 `━━━━━━━━━━━━━━━━━━\n` +
                 `💡 <b>คำแนะนำ:</b> ${aqi.descGeneral}\n\n` +
                 `🌐 <a href="https://38920-student.github.io/pm2.5-web/">เปิดดู Dashboard Real-time</a>`;
@@ -2260,7 +2278,7 @@
 
             const testMsg = `🔔 <b>ทดสอบการเชื่อมต่อ Telegram สำเร็จ!</b>\n\n` +
                 `ระบบติดตามคุณภาพอากาศ AirGuard พร้อมส่งแจ้งเตือนเมื่อค่าฝุ่นเกินเกณฑ์มาตรฐาน\n` +
-                `🕒 เวลาทดสอบ: ${new Date().toLocaleString('th-TH')}`;
+                `🕒 เวลาทดสอบ: ${new Date().toLocaleString('th-TH', { timeZone: APP_TIMEZONE })}`;
 
             try {
                 const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
