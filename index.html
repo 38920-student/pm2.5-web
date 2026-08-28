@@ -880,6 +880,8 @@
         let countdownTimerId = null;
         let chartInstance = null;
         let activeChartSeries = 'all'; // 'all', 'pm25', 'gas'
+        let selectedChartDate = null; // YYYY-MM-DD (Thai calendar day) currently shown in the Trends chart
+        let chartPointsLimit = 25;    // matches the default <option> in #chart-points-select
         let currentPage = 1;
         const rowsPerPage = 10;
         let lastTelegramAlertTime = 0;
