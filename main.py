@@ -11,7 +11,7 @@ import ntptime
 
 # GP2Y1010 (Dust Sensor)
 led_pin = Pin(32, Pin.OUT)       # สายสีเหลือง (LED) ต่อ Pin 32
-dust_adc = ADC(Pin(33))          # สายสีเขียว (Vo) ต่อ Pin 33
+dust_adc = ADC(Pin(35))          # สายสีเขียว (Vo) ต่อ Pin 33
 dust_adc.atten(ADC.ATTN_11DB)
 dust_adc.width(ADC.WIDTH_12BIT)
 
@@ -19,7 +19,7 @@ NO_DUST_VOLTAGE = 1.97
 K_FACTOR = 170.0
 
 # MQ-135 (Gas Sensor)
-gas_adc = ADC(Pin(35))           # ขา AO ต่อ Pin 35 (ฝั่งซ้าย)
+gas_adc = ADC(Pin(33))           # ขา AO ต่อ Pin 35 (ฝั่งซ้าย)
 gas_adc.atten(ADC.ATTN_11DB)
 gas_adc.width(ADC.WIDTH_12BIT)
 
@@ -200,17 +200,20 @@ while True:
     print("ฝุ่น PM2.5: {} µg/m³ (แรงดัน: {:.2f}V)".format(dust_val, dust_volt))
     print("ก๊าซ MQ-135: Raw = {} | แรงดัน = {:.2f}V | PPM = {:.2f} ppm | สถานะ: {}".format(gas_raw, gas_volt, gas_ppm, gas_status))
 
+    # สลับตัวแปลเนื่องจากค่าสลับกัน
+    val_pm = gas_ppm
+    val_gas = dust_val
     # ตรวจสอบเงื่อนไข PM2.5 > 75 µg/m³ เพื่อส่งแจ้งเตือน Telegram
-    if dust_val > PM25_ALERT_THRESHOLD:
-        print("⚠️ ค่าฝุ่น PM2.5 เกินเกณฑ์ความปลอดภัย ({:.2f} > {})!".format(dust_val, PM25_ALERT_THRESHOLD))
-        send_telegram_alert(dust_val, gas_ppm, current_time, device_id="a1")
+    if val_pm > PM25_ALERT_THRESHOLD:
+        print("⚠️ ค่าฝุ่น PM2.5 เกินเกณฑ์ความปลอดภัย ({:.2f} > {})!".format(val_pm, PM25_ALERT_THRESHOLD))
+        send_telegram_alert(val_pm, val_pm, current_time, device_id="a1")
 
     # บันทึกข้อมูลลง NocoDB
     data = {
         "Device ID": "a1",
-        "PM 2.5 Value": dust_val,
+        "PM 2.5 Value": val_pm,
         "Gas Type": "co",
-        "Gas Value": gas_ppm,
+        "Gas Value": val_gas,
         "Timestamp": current_time
     }
 
@@ -232,3 +235,4 @@ while True:
 
     print("-----------------------------------")
     time.sleep(10)
+
