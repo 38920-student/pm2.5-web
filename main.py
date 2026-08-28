@@ -11,7 +11,7 @@ import ntptime
 
 # GP2Y1010 (Dust Sensor)
 led_pin = Pin(32, Pin.OUT)       # สายสีเหลือง (LED) ต่อ Pin 32
-dust_adc = ADC(Pin(35))          # สายสีเขียว (Vo) ต่อ Pin 35
+dust_adc = ADC(Pin(33))          # สายสีเขียว (Vo) ต่อ Pin 33
 dust_adc.atten(ADC.ATTN_11DB)
 dust_adc.width(ADC.WIDTH_12BIT)
 
@@ -19,7 +19,7 @@ NO_DUST_VOLTAGE = 1.97
 K_FACTOR = 170.0
 
 # MQ-135 (Gas Sensor)
-gas_adc = ADC(Pin(33))           # ขา AO ต่อ Pin 33 (ฝั่งซ้าย)
+gas_adc = ADC(Pin(35))           # ขา AO ต่อ Pin 35 (ฝั่งซ้าย)
 gas_adc.atten(ADC.ATTN_11DB)
 gas_adc.width(ADC.WIDTH_12BIT)
 
