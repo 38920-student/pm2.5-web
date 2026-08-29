@@ -18,8 +18,10 @@ dust_adc.width(ADC.WIDTH_12BIT)
 NO_DUST_VOLTAGE = 1.97
 K_FACTOR = 170.0
 
-# MQ-135 (Gas Sensor)
-gas_adc = ADC(Pin(33))           # ขา AO ต่อ Pin 35 (ฝั่งซ้าย)
+# MQ-135 (Air Quality & Gas Sensor)
+# ตรวจวัดก๊าซและมลพิษ: แอมโมเนีย (NH3), ซัลไฟด์ (H2S), เบนซีน (C6H6), คาร์บอนไดออกไซด์ (CO2), 
+#                      คาร์บอนมอนอกไซด์ (CO), แอลกอฮอล์ (Alcohol) และควันไฟ (Smoke) - AQI
+gas_adc = ADC(Pin(33))           # ขา AO ต่อ Pin 33 (ฝั่งซ้าย)
 gas_adc.atten(ADC.ATTN_11DB)
 gas_adc.width(ADC.WIDTH_12BIT)
 
@@ -66,8 +68,8 @@ headers = {
 # ==========================================
 # 4. Telegram Notification & PCD Standards
 # ==========================================
-# เกณฑ์มาตรฐานคุณภาพอากาศ PM 2.5 ประเทศไทย (กรมควบคุมมลพิษ PCD / สคพ.3)
-# อ้างอิง: https://epo03.pcd.go.th/th/news/detail/178650
+# เกณฑ์มาตรฐานคุณภาพอากาศ PM 2.5 ประเทศไทย (กรมควบคุมมลพิษ PCD / สคพ.11 นครราชสีมา)
+# อ้างอิง: https://epo11.pcd.go.th/th/news/detail/190428/
 # 🔵 ระดับ 1 (สีฟ้า): 0.0 - 15.0 µg/m³   -> อากาศดีมาก (Very Good)
 # 🟢 ระดับ 2 (สีเขียว): 15.1 - 25.0 µg/m³ -> อากาศดี (Good)
 # 🟡 ระดับ 3 (สีเหลือง): 25.1 - 37.5 µg/m³ -> ปานกลาง (Moderate)
@@ -150,11 +152,12 @@ def send_telegram_alert(pm25_val, gas_val, time_str, device_id="a1"):
     # ข้อความภาษาไทยแจ้งเตือนสถานการณ์วิกฤต
     message = (
         "🚨 <b>แจ้งเตือนคุณภาพอากาศวิกฤต!</b> 🚨\n\n"
-        "⚠️ <b>ค่าฝุ่น PM 2.5 เกินมาตรฐานความปลอดภัย</b>\n"
+        "⚠️ <b>ค่าฝุ่น PM 2.5 เกินมาตรฐานความปลอดภัย (PCD สคพ.11)</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
         "🔴 <b>สถานะ:</b> มีผลกระทบต่อสุขภาพ (Hazardous)\n"
         "📊 <b>ค่า PM 2.5:</b> <code>{:.2f}</code> µg/m³ (เกณฑ์วิกฤต > 75.0)\n"
-        "💨 <b>ระดับก๊าซ:</b> <code>{:.2f}</code> PPM\n"
+        "💨 <b>ระดับก๊าซ/มลพิษ (AQI):</b> <code>{:.2f}</code> PPM\n"
+        "🔬 <b>ก๊าซที่ตรวจวัด:</b> แอมโมเนีย, ซัลไฟด์, เบนซีน, CO₂, CO, แอลกอฮอล์, ควันไฟ\n"
         "📍 <b>อุปกรณ์:</b> {}\n"
         "🕒 <b>เวลาตรวจวัด:</b> {}\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
@@ -198,7 +201,7 @@ while True:
 
     print("Timestamp:", current_time)
     print("ฝุ่น PM2.5: {} µg/m³ (แรงดัน: {:.2f}V)".format(dust_val, dust_volt))
-    print("ก๊าซ MQ-135: Raw = {} | แรงดัน = {:.2f}V | PPM = {:.2f} ppm | สถานะ: {}".format(gas_raw, gas_volt, gas_ppm, gas_status))
+    print("ก๊าซ MQ-135 (AQI): Raw = {} | แรงดัน = {:.2f}V | PPM = {:.2f} ppm | สถานะ: {} (ตรวจวัด: แอมโมเนีย, ซัลไฟด์, เบนซีน, CO2, CO, แอลกอฮอล์, ควันไฟ)".format(gas_raw, gas_volt, gas_ppm, gas_status))
 
     # สลับตัวแปลเนื่องจากค่าสลับกัน
     val_pm = gas_ppm
@@ -206,13 +209,13 @@ while True:
     # ตรวจสอบเงื่อนไข PM2.5 > 75 µg/m³ เพื่อส่งแจ้งเตือน Telegram
     if val_pm > PM25_ALERT_THRESHOLD:
         print("⚠️ ค่าฝุ่น PM2.5 เกินเกณฑ์ความปลอดภัย ({:.2f} > {})!".format(val_pm, PM25_ALERT_THRESHOLD))
-        send_telegram_alert(val_pm, val_pm, current_time, device_id="a1")
+        send_telegram_alert(val_pm, val_gas, current_time, device_id="a1")
 
     # บันทึกข้อมูลลง NocoDB
     data = {
         "Device ID": "a1",
         "PM 2.5 Value": val_pm,
-        "Gas Type": "co",
+        "Gas Type": "AQI",
         "Gas Value": val_gas,
         "Timestamp": current_time
     }
