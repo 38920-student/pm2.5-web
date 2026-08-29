@@ -20,7 +20,7 @@ K_FACTOR = 170.0
 
 # MQ-135 (Air Quality & Gas Sensor)
 # ตรวจวัดก๊าซและมลพิษ: แอมโมเนีย (NH3), ซัลไฟด์ (H2S), เบนซีน (C6H6), คาร์บอนไดออกไซด์ (CO2), 
-#                      คาร์บอนมอนอกไซด์ (CO), แอลกอฮอล์ (Alcohol) และควันไฟ (Smoke) - AQI
+#                      คาร์บอนมอนอกไซด์ (CO), แอลกอฮอล์ (Alcohol) และควันไฟ (Smoke)
 gas_adc = ADC(Pin(33))           # ขา AO ต่อ Pin 33 (ฝั่งซ้าย)
 gas_adc.atten(ADC.ATTN_11DB)
 gas_adc.width(ADC.WIDTH_12BIT)
@@ -156,7 +156,7 @@ def send_telegram_alert(pm25_val, gas_val, time_str, device_id="a1"):
         "━━━━━━━━━━━━━━━━━━━━\n"
         "🔴 <b>สถานะ:</b> มีผลกระทบต่อสุขภาพ (Hazardous)\n"
         "📊 <b>ค่า PM 2.5:</b> <code>{:.2f}</code> µg/m³ (เกณฑ์วิกฤต > 75.0)\n"
-        "💨 <b>ระดับก๊าซ/มลพิษ (AQI):</b> <code>{:.2f}</code> PPM\n"
+        "💨 <b>ระดับก๊าซ/มลพิษ:</b> <code>{:.2f}</code> PPM\n"
         "🔬 <b>ก๊าซที่ตรวจวัด:</b> แอมโมเนีย, ซัลไฟด์, เบนซีน, CO₂, CO, แอลกอฮอล์, ควันไฟ\n"
         "📍 <b>อุปกรณ์:</b> {}\n"
         "🕒 <b>เวลาตรวจวัด:</b> {}\n"
@@ -201,7 +201,7 @@ while True:
 
     print("Timestamp:", current_time)
     print("ฝุ่น PM2.5: {} µg/m³ (แรงดัน: {:.2f}V)".format(dust_val, dust_volt))
-    print("ก๊าซ MQ-135 (AQI): Raw = {} | แรงดัน = {:.2f}V | PPM = {:.2f} ppm | สถานะ: {} (ตรวจวัด: แอมโมเนีย, ซัลไฟด์, เบนซีน, CO2, CO, แอลกอฮอล์, ควันไฟ)".format(gas_raw, gas_volt, gas_ppm, gas_status))
+    print("ก๊าซ MQ-135: Raw = {} | แรงดัน = {:.2f}V | PPM = {:.2f} ppm | สถานะ: {} (ตรวจวัด: แอมโมเนีย, ซัลไฟด์, เบนซีน, CO2, CO, แอลกอฮอล์, ควันไฟ)".format(gas_raw, gas_volt, gas_ppm, gas_status))
 
     # สลับตัวแปลเนื่องจากค่าสลับกัน
     val_pm = gas_ppm
@@ -215,7 +215,7 @@ while True:
     data = {
         "Device ID": "a1",
         "PM 2.5 Value": val_pm,
-        "Gas Type": "AQI",
+        "Gas Type": "MQ-135",
         "Gas Value": val_gas,
         "Timestamp": current_time
     }
